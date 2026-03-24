@@ -38,7 +38,7 @@ size = 16*64  # 输入空间大小
 sortddt = np.argsort(DDT.ravel())[::-1]
 import numpy as np
 
-
+print("概率最大的前5个（输入差分，输出差分）及其概率：")
 for i in range(5):
     idx = sortddt[i]
     # 使用 unravel_index 获取坐标
