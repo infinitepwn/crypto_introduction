@@ -1,0 +1,262 @@
+\documentclass[12pt, a4paper]{article}
+
+% ========== 宏包引入 ==========
+\usepackage{amsmath, amssymb, amsfonts} % 数学公式支持
+\usepackage[margin=2.5cm]{geometry}     % 页面边距设置
+\usepackage{xcolor}                     % 颜色支持
+\usepackage[most]{tcolorbox}            % 精美的文本框
+\usepackage{booktabs}                   % 三线表
+\usepackage{graphicx}                   % 图片支持
+\usepackage{hyperref}                   % 超链接
+\usepackage{enumitem}                   % 列表环境定制
+\usepackage{ctex}                    % 中文支持
+% ========== 颜色定义 ==========
+\definecolor{aesblue}{RGB}{41, 128, 185}
+\definecolor{aesdark}{RGB}{44, 62, 80}
+\definecolor{aesbg}{RGB}{244, 246, 247}
+\definecolor{aesred}{RGB}{192, 57, 43}
+
+% ========== 文本框样式定义 ==========
+\tcbset{
+    notebox/.style={
+        enhanced,
+        boxrule=0pt,
+        frame hidden,
+        borderline west={4pt}{0pt}{aesblue},
+        colback=aesblue!5,
+        coltitle=aesblue,
+        fonttitle=\bfseries\large,
+        attach title to upper,
+        title={#1\quad},
+        after title={\par\smallskip}
+    },
+    mathbox/.style={
+        enhanced,
+        colback=white,
+        colframe=aesdark,
+        boxrule=1pt,
+        arc=3pt,
+        drop fuzzy shadow
+    }
+}
+
+% ========== 文档信息 ==========
+\title{\vspace{-2cm}\bfseries\color{aesdark} 密码学核心笔记：高级加密标准 (AES)}
+\author{密码学学习笔记}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+AES (Advanced Encryption Standard) 即高级加密标准，是目前世界上应用最广泛的对称加密算法。本笔记详细梳理了 AES 的数学基础、算法整体结构以及核心轮函数的运作原理。
+\end{abstract}
+
+\vspace{0.5cm}
+
+% --- 第1节：概述 ---
+\section{\color{aesblue}1. AES 概述}
+
+AES 是一种**分组密码 (Block Cipher)**，其前身是 Rijndael 算法。它的设计遵循代数结构，具有高度的安全性和软硬件实现效率。
+
+\begin{itemize}[itemsep=4pt]
+    \item \textbf{分组长度：} 严格固定为 128 bit (16 字节)。
+    \item \textbf{密钥长度：} 可选 128 bit, 192 bit 或 256 bit。
+    \item \textbf{轮数 (Rounds)：} 视密钥长度而定，分别为 10 轮、12 轮和 14 轮。
+\end{itemize}
+
+% --- 第2节：数学基础 ---
+\section{\color{aesblue}2. 核心数学基础：有限域 $GF(2^8)$}
+
+AES 的所有字节运算都在伽罗瓦域 $GF(2^8)$ 上进行。一个字节可以表示为一个次数最高为 7 的多项式：
+$$ b_7 x^7 + b_6 x^6 + b_5 x^5 + b_4 x^4 + b_3 x^3 + b_2 x^2 + b_1 x + b_0 $$
+其中系数 $b_i \in \{0, 1\}$。
+
+\begin{tcolorbox}[notebox=运算规则]
+\begin{itemize}
+    \item \textbf{加法与减法：} 在 $GF(2^8)$ 中，加法和减法等价于按位异或 (XOR，符号为 $\oplus$)。
+    \item \textbf{乘法：} 多项式相乘后，必须模一个不可约多项式 $m(x)$。AES 选用的不可约多项式为：
+    $$ m(x) = x^8 + x^4 + x^3 + x + 1 \quad \text{(十六进制记为 \texttt{0x11B})} $$
+\end{itemize}
+\end{tcolorbox}
+
+% --- 第3节：算法结构与状态矩阵 ---
+\section{\color{aesblue}3. 状态矩阵 (State Matrix)}
+
+AES 将 128 bit 的输入数据按字节划分为 16 个字节，并排列成一个 $4 \times 4$ 的列优先矩阵，称为**状态矩阵 (State)**。
+
+\begin{tcolorbox}[mathbox]
+$$
+\begin{bmatrix}
+s_{0,0} & s_{0,1} & s_{0,2} & s_{0,3} \\
+s_{1,0} & s_{1,1} & s_{1,2} & s_{1,3} \\
+s_{2,0} & s_{2,1} & s_{2,2} & s_{2,3} \\
+s_{3,0} & s_{3,1} & s_{3,2} & s_{3,3}
+\end{bmatrix}
+$$
+\end{tcolorbox}
+后续的所有轮函数操作（除了密钥加法）都是在这个矩阵上进行变换的。
+
+% --- 第4节：核心轮函数 ---
+\section{\color{aesblue}4. 轮函数 (Round Function)}
+
+除了最后一轮，AES 的标准轮函数包含四个步骤。最后一轮会省略 \textbf{MixColumns} 步骤。
+
+\subsection{4.1 字节代换 (SubBytes)}
+这是一个非线性的字节替换过程，通过查 S 盒 (S-box) 独立地替换状态矩阵中的每个字节。
+设计原理：
+1. 求字节在 $GF(2^8)$ 中的乘法逆元。
+2. 进行仿射变换 (Affine Transformation)，破坏代数结构的简单性，抵抗代数攻击。
+\subsubsection{4.1.1 S 盒的数学构造逻辑}
+
+S 盒的设计并非随机生成，而是基于严格的代数结构，其构造过程分为两步：
+
+\begin{enumerate}
+    \item \textbf{有限域求逆 (Inverse over $GF(2^8)$)} \\
+    将输入字节 $a$ 映射到其在有限域 $GF(2^8)$ 上的乘法逆元 $b = a^{-1}$。
+    \begin{itemize}
+        \item 若 $a \neq 0$，则 $a \cdot b \equiv 1 \pmod{x^8 + x^4 + x^3 + x + 1}$。
+        \item 若 $a = 0$，则定义其映射结果仍为 $0$。
+    \end{itemize}
+    \textit{意义：求逆运算具有极高的非线性度，能有效抵抗线性密码分析。}
+
+    \item \textbf{仿射变换 (Affine Transformation)} \\
+    对上一步得到的 $b$ 进行线性变换并异或一个常数向量。设 $b$ 的位表示为 $(b_0, b_1, \dots, b_7)$，变换后的位为 $(s_0, s_1, \dots, s_7)$：
+    
+    \begin{tcolorbox}[mathbox]
+    $$
+    \begin{bmatrix} s_0 \\ s_1 \\ s_2 \\ s_3 \\ s_4 \\ s_5 \\ s_6 \\ s_7 \end{bmatrix} = 
+    \begin{bmatrix} 
+    1 & 0 & 0 & 0 & 1 & 1 & 1 & 1 \\
+    1 & 1 & 0 & 0 & 0 & 1 & 1 & 1 \\
+    1 & 1 & 1 & 0 & 0 & 0 & 1 & 1 \\
+    1 & 1 & 1 & 1 & 0 & 0 & 0 & 1 \\
+    1 & 1 & 1 & 1 & 1 & 0 & 0 & 0 \\
+    0 & 1 & 1 & 1 & 1 & 1 & 0 & 0 \\
+    0 & 0 & 1 & 1 & 1 & 1 & 1 & 0 \\
+    0 & 0 & 0 & 1 & 1 & 1 & 1 & 1 
+    \end{bmatrix}
+    \begin{bmatrix} b_0 \\ b_1 \\ b_2 \\ b_3 \\ b_4 \\ b_5 \\ b_6 \\ b_7 \end{bmatrix} \oplus
+    \begin{bmatrix} 1 \\ 1 \\ 0 \\ 0 \\ 0 \\ 1 \\ 1 \\ 0 \end{bmatrix}
+    $$
+    \end{tcolorbox}
+    \textit{注：最后的常数向量对应十六进制 \texttt{0x63}。}
+\end{enumerate}
+
+
+
+\subsubsection{4.1.2 为什么这样设计？}
+
+\begin{itemize}
+    \item \textbf{最大化非线性：} 仅仅通过求逆得到的变换在代数上过于简单（可以用简单的多项式描述）。仿射变换的引入极大地增加了描述 S 盒所需的布尔代数方程的复杂度，从而抵御代数攻击。
+    \item \textbf{消除不动点：} 纯求逆运算中 $0 \to 0$。通过异或 \texttt{0x63}，使得 $S(00) = 63$，确保了输入为全零时输出不再为零，增强了混淆效果。
+    \item \textbf{优异的差分特性：} 这种构造保证了最大差分传播概率为 $2^{-7}$，使得攻击者很难找到高概率的差分路径。
+\end{itemize}
+
+\begin{tcolorbox}[notebox=小贴士]
+在实际软件实现中，为了提高速度，S 盒通常被预计算并存储为一个 256 字节的查找表（Lookup Table），直接通过输入值作为索引进行快速替换。
+\end{tcolorbox}
+\subsection{4.2 行移位 (ShiftRows)}
+在状态矩阵中进行按行的循环左移，提供算法的**扩散性 (Diffusion)**。
+\begin{itemize}
+    \item 第 0 行：不移位。
+    \item 第 1 行：循环左移 1 个字节。
+    \item 第 2 行：循环左移 2 个字节。
+    \item 第 3 行：循环左移 3 个字节。
+\end{itemize}
+
+\subsection{4.3 列混淆 (MixColumns)}
+对状态矩阵的每一列进行独立的线性变换。将每一列视为 $GF(2^8)$ 上的四次多项式，乘上一个固定的多项式 $c(x)$ 并模 $x^4 + 1$。
+在矩阵表示中，它等价于左乘一个固定的常数矩阵：
+\begin{tcolorbox}[mathbox]
+$$
+\begin{bmatrix}
+s'_{0,c} \\ s'_{1,c} \\ s'_{2,c} \\ s'_{3,c}
+\end{bmatrix}
+=
+\begin{bmatrix}
+02 & 03 & 01 & 01 \\
+01 & 02 & 03 & 01 \\
+01 & 01 & 02 & 03 \\
+03 & 01 & 01 & 02
+\end{bmatrix}
+\begin{bmatrix}
+s_{0,c} \\ s_{1,c} \\ s_{2,c} \\ s_{3,c}
+\end{bmatrix}
+$$
+\end{tcolorbox}
+\textit{注：矩阵中的数字为十六进制形式，运算均在 $GF(2^8)$ 上进行。}
+
+\subsection{4.4 轮密钥加 (AddRoundKey)}
+将当前的状态矩阵与该轮的子密钥 (Round Key) 进行按位异或。
+$$ S'_{i,j} = S_{i,j} \oplus k_{i,j} $$
+
+% --- 第5节：密钥扩展 ---
+\section{\color{aesblue}5. 密钥扩展 (Key Expansion)}
+
+AES 算法通过密钥编排方案将初始密钥扩展为一个包含多个字 (Word，1 Word = 4 Bytes) 的数组，为每一轮生成轮密钥。
+核心操作包括：
+\begin{itemize}
+    \item \textbf{RotWord：} 字的循环移位。
+    \item \textbf{SubWord：} 对字中的每个字节进行 S 盒替换。
+    \item \textbf{Rcon (轮常数)：} 消除对称性，其值为 $[x^{i-1}, 00, 00, 00]$。
+\end{itemize}
+\section{\color{aesblue}附加专题：列混合 (MixColumns) 的设计逻辑}
+
+\begin{tcolorbox}[notebox=核心意义]
+列混合是 AES 达到 \textbf{完全扩散 (Full Diffusion)} 的关键。其设计目标是：在最短的轮数内，让输入状态的每一个比特位都能影响到输出状态的所有比特位。
+\end{tcolorbox}
+
+\subsection{1. MDS 矩阵与分支数}
+列混合本质上是一个线性变换，通过左乘一个常数矩阵 $C$ 实现。
+$$ S'_{col} = C \cdot S_{col} $$
+这个矩阵 $C$ 被选为 \textbf{MDS (Maximum Distance Separable)} 矩阵。在编码理论中，MDS 矩阵具有最高的分支数（Branch Number）。
+
+\begin{itemize}
+    \item \textbf{分支数定义：} $\mathcal{B} = \min_{x \neq 0} \{ \text{wt}(x) + \text{wt}(C \cdot x) \}$，其中 $\text{wt}$ 表示非零字节的个数。
+    \item \textbf{AES 的表现：} AES 列混合的分支数达到最大值 $k+1 = 5$。这意味着如果输入列中只有 \textbf{1 个字节} 发生了改变，输出列的 \textbf{4 个字节} 必然全部改变。
+\end{itemize}
+
+[Image of AES MixColumns MDS diffusion effect]
+
+\subsection{2. 计算效率的平衡}
+为了在实现复杂度与安全性之间取得平衡，列混合矩阵的系数选用了 \texttt{01, 02, 03}：
+\begin{tcolorbox}[mathbox]
+$$
+\begin{bmatrix}
+02 & 03 & 01 & 01 \\
+01 & 02 & 03 & 01 \\
+01 & 01 & 02 & 03 \\
+03 & 01 & 01 & 02
+\end{bmatrix}
+$$
+\end{tcolorbox}
+
+\textbf{设计考量：}
+\begin{enumerate}
+    \item \textbf{硬件友好性：} 在 $GF(2^8)$ 中，乘以 \texttt{02} 只需一次左移和一次可选的异或（\texttt{xtime} 运算），乘以 \texttt{03} 只需 \texttt{(02 $\oplus$ 01)}。这避免了复杂的乘法器设计。
+    \item \textbf{循环移位特性：} 观察矩阵可以发现，每一行都是前一行循环右移的结果。这种循环对称性极大简化了逻辑电路的布局。
+\end{enumerate}
+
+\subsection{3. 扩散效果的倍增}
+列混合（纵向扩散）与 \textbf{行移位 (ShiftRows)}（横向扩散）交替进行。这种“纵横交错”的设计确保了：
+\begin{quote}
+    仅需 \textbf{两轮} 变换，原始明文中的任意 1 bit 变化就会扩散到整个 128 bit 的状态矩阵中。
+\end{quote}
+
+[Image of AES propagation of a single bit change over rounds]
+
+\subsection{4. 解密的对称性挑战}
+列混合矩阵的逆矩阵系数为 \texttt{0E, 0B, 0D, 09}。这些系数比加密系数复杂得多。
+\begin{itemize}
+    \item \textbf{代价：} 导致 AES 解密通常比加密稍慢。
+    \item \textbf{权衡：} 这种设计将计算压力推向了解密端，而在许多应用场景（如文件加密、流媒体推流）中，加密的性能瓶颈通常比解密更敏感。
+\end{itemize}
+\vspace{1cm}
+\begin{center}
+    \color{gray} \hrule fill \\ \vspace{0.2cm}
+    \textit{“Cryptography is about replacing trust with math.”}
+\end{center}
+
+\end{document}
