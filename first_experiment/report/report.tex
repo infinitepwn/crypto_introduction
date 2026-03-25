@@ -1,0 +1,431 @@
+\documentclass[12pt,a4paper]{article}
+
+% --- 核心宏包 ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{ctex} 
+\usepackage{amsmath, amsfonts, amssymb}
+\usepackage{geometry}
+\usepackage{listings}
+\usepackage{longtable}
+\usepackage{float}
+\usepackage{url}
+\geometry{left=2.5cm, right=2.5cm, top=3cm, bottom=3cm}
+
+% --- 视觉与排版优化宏包 ---
+\usepackage[table]{xcolor} % 颜色支持，带有表格填色功能
+\usepackage{booktabs}      % 三线表美化
+\usepackage{fancyhdr}      % 自定义页眉页脚
+\usepackage[many]{tcolorbox} % 强大的带框/背景盒工具
+\usepackage{enumitem}      % 列表间距调整
+\usepackage{hyperref}      % 交叉引用与超链接
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta} % 必须有 positioning
+\definecolor{macblue}{RGB}{0, 122, 255}    % 强调蓝
+\definecolor{bglight}{RGB}{245, 245, 247}  % 极简浅灰背景
+\definecolor{darkgray}{RGB}{51, 51, 51}
+\definecolor{warningred}{RGB}{255, 59, 48} % 增加红色用于攻击/警告的强调
+% --- 超链接设置 ---
+\hypersetup{
+    colorlinks=true,
+    linkcolor=macblue,
+    urlcolor=macblue
+}
+
+% --- 页眉页脚设置 ---
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\textcolor{macblue}{\textbf{Experiment Report}}} % 左侧显示实验报告
+\fancyhead[R]{\textbf{First Experiment}} % 右侧显示实验名称
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.8pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{macblue}\leaders\hrule height \headrulewidth\hfill}}
+
+% --- 自定义高亮公式框 ---
+\newtcolorbox{coreconcept}[1][]{
+    colback=bglight,
+    colframe=macblue,
+    fonttitle=\bfseries\sffamily,
+    title=#1,
+    arc=3mm,
+    boxrule=1.2pt,
+    shadow={2mm}{-1.5mm}{0mm}{black!15},
+    left=10pt, right=10pt, top=5pt, bottom=5pt
+}
+\newtcolorbox{warningbox}[1][]{
+    colback=warningred!5,
+    colframe=warningred,
+    fonttitle=\bfseries\sffamily,
+    title=#1,
+    arc=3mm,
+    boxrule=1.2pt,
+    left=10pt, right=10pt, top=5pt, bottom=5pt
+}
+
+% --- 标题区域 ---
+\title{
+\textbf{\LARGE{密码学引论第一次实验}}\\[0.5em]
+}
+\author{\textbf{江李阳，王建一，邱泽辉}}
+\date{\today}
+
+\begin{document}
+
+
+
+\begin{thebibliography}{99}
+
+\bibitem{Knudsen2002}
+L.~Knudsen and D.~Wagner.
+\newblock Integral Cryptanalysis.
+\newblock In {\em Fast Software Encryption (FSE 2002)}, 
+  LNCS 2365, pages 112--127. Springer-Verlag, 2002.
+\newblock Available at: \url{https://www.iacr.org/archive/fse2002/23650114/23650114.pdf}
+\bibitem{WongBlock}
+David Wong.
+\newblock Block Breakers: An Interactive Tutorial on Block Ciphers.
+\newblock URL: \url{https://www.davidwong.fr/blockbreakers/index.html}
+
+\bibitem{ZhihuAES}
+知乎专栏.
+\newblock AES 积分攻击（Integral Cryptanalysis）深度解析.
+\newblock URL: \url{https://zhuanlan.zhihu.com/p/589141550}
+\end{thebibliography}
+
+\maketitle
+\thispagestyle{fancy} % 首页也显示漂亮页眉
+\section{实验一}
+\subsection{实验目的}
+\begin{enumerate}
+    \item 理解分组密码中 S 盒的非线性混淆原理。
+    \item 掌握差分分布表（Differential Distribution Table, DDT）的构造方法。
+    \item 通过分析 S1 盒的差分特性，评估其抵抗差分攻击（Differential Cryptanalysis）的能力。
+\end{enumerate}
+
+\subsection{实验原理}
+\subsubsection{差分分布表定义}
+对于 $6 \to 4$ 位的 S 盒，输入差分 $\alpha$ 与输出差分 $\beta$ 的关联强度由 $N_S(\alpha, \beta)$ 衡量。其数学定义为：在一个输入空间内，满足特定输入差分导致特定输出差分的输入值数量。
+$$ N_S(\alpha, \beta) = \# \{ X \in \{0,1\}^6 \mid S(X) \oplus S(X \oplus \alpha) = \beta \} $$
+其中 $X$ 遍历所有 64 种输入可能。
+
+\subsection{实验数据分析}
+
+\subsubsection{差分分布表 (DDT) 概览}
+本实验生成的 S1 盒 DDT 规模为 $64 \times 16$。表中的数值反映了特定差分传播的频数。具体差分分布表见附录A。
+\subsubsection{高概率差分路径}
+实验数据如下表所示：
+
+\begin{table}[H]
+\centering
+\caption{S1 盒高概率差分路径汇总表}
+\begin{small}
+\begin{longtable}{|c|c|c|p{8cm}|}
+\hline
+\textbf{排名} & \textbf{计数} & \textbf{概率} & \textbf{(输入差分, 输出差分) 列表} \\ \hline
+1 & 64 & 1.000000 & (0x00, 0x0) \\ \hline
+2 & 16 & 0.250000 & (0x34, 0x2) \\ \hline
+3 & 14 & 0.218750 & (0x03, 0x0), (0x0C, 0xE), (0x10, 0x7), (0x1D, 0xE), (0x1E, 0x4), (0x24, 0x8), (0x24, 0x9), (0x29, 0x9), (0x2A, 0x9), (0x35, 0x8), (0x35, 0xE), (0x3E, 0x7) \\ \hline
+4 & 12 & 0.187500 & (0x01, 0xA), (0x02, 0xC), (0x05, 0xC), (0x06, 0xF), (0x08, 0x3), (0x09, 0xF), (0x0B, 0xF), (0x10, 0xB), (0x1C, 0x7), (0x20, 0x5), (0x20, 0xF), (0x24, 0x0), (0x25, 0x3), (0x28, 0x0), (0x28, 0x6), (0x2B, 0x0), (0x2E, 0xC), (0x30, 0x4), (0x34, 0x7), (0x37, 0x2), (0x39, 0x4), (0x3C, 0x4), (0x3C, 0xB), (0x3D, 0xD) \\ \hline
+\end{longtable}
+\end{small}
+\end{table}
+
+\subsubsection{概率传播种类统计}
+实验统计显示，该 S 盒共有 9 种不同的非零计数值，对应 9 种传播概率：
+\begin{itemize}
+    \item \textbf{低概率路径}：计数为 2, 4, 6，对应的最低传播概率为 $0.0312$。
+    \item \textbf{中概率路径}：计数为 8, 10, 12。
+    \item \textbf{高概率路径}：计数为 14, 16，最高传播概率达到 $0.2500$（即 $16/64$）。
+\end{itemize}
+
+\subsubsection{差分碰撞分析（输入非 0 输出为 0）}
+实验结果表明，当输入差分 $\alpha \neq 0$ 时，输出差分 $\beta$ 可能为 0。
+\textbf{原因分析：}
+DES 的 S 盒是一个从 6 位到 4 位的压缩映射。根据抽屉原理（Pigeonhole Principle），必然存在多个不同的输入映射到相同的输出。即：
+$$ \exists X_1 \neq X_2, \text{ s.t. } S(X_1) = S(X_2) \implies S(X_1) \oplus S(X_2) = 0 $$
+当 $\alpha = X_1 \oplus X_2$ 时，该输入差分会导致输出差分为 0。这在差分分析中意味着该 S 盒在该路径下是“不活动的”。
+\begin{table}[h!]
+\centering
+\caption{S1 盒差分碰撞分布表 ($\alpha \neq 0, \beta = 0$)}
+\begin{small}
+\begin{tabular}{|cc|cc|cc|}
+\hline
+\textbf{输入差分} & \textbf{碰撞频数} & \textbf{输入差分} & \textbf{碰撞频数} & \textbf{输入差分} & \textbf{碰撞频数} \\ \hline
+0x03 & 14 & 0x25 & 6  & 0x2C & 4  \\
+0x24 & 12 & 0x2D & 6  & 0x31 & 4  \\
+0x28 & 12 & 0x2E & 6  & 0x32 & 4  \\
+0x2B & 12 & 0x39 & 6  & 0x33 & 4  \\
+0x09 & 10 & 0x3A & 6  & 0x3E & 4  \\
+0x22 & 10 & 0x05 & 4  & 0x3F & 4  \\
+0x27 & 10 & 0x17 & 4  & 0x07 & 2  \\ \cline{5-6} 
+0x0D & 6  & 0x1B & 4  & 0x0B & 2  \\
+0x11 & 6  & 0x1D & 4  & 0x0F & 2  \\
+\dots & \dots & 0x29 & 4  & \dots & \dots \\ \hline
+\end{tabular}
+\end{small}
+\end{table}
+\newpage
+\section{实验二}
+\subsection{实验目的}
+\begin{enumerate}
+    \item 验证 AES 算法在 3 轮加密下的平衡性（Balance）现象。
+    \item 探究轮数增加对积分特性消失的影响。
+    \item 分析列混淆变换（MixColumns）在密码扩散中的核心作用。
+\end{enumerate}
+
+\subsection{实验原理}
+
+\subsubsection{积分特性与 $\Lambda$-集合}
+在对 AES 的积分攻击中，我们构造一个特殊的明文集合，称为 $\Lambda$-集合。在该集合中，选定的字节遍历 $0 \dots 255$（称为 Active 字节），而其余字节保持固定（称为 Constant 字节）。\cite{WongBlock,ZhihuAES}\
+\footnote{参考文献2的链接目前已失效(或许是作者没有维护)，但是可以通过互联网档案馆（Wayback Machine）访问：\url{https://web.archive.org/web/20240101000000*/https://www.davidwong.fr/blockbreakers/index.html}。}
+
+对于一个包含 256 个明文的 $\Lambda$-集合，在经过 3 轮 AES 加密后，其密文状态满足：
+\begin{equation}
+    \bigoplus_{i=1}^{256} C^{(i)} = 0
+\end{equation}
+
+下面展开具体说明
+\subsubsection{AddRoundKey不影响活跃字节}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{SQUARE-03.jpg}
+\end{figure}
+首先一开始先将明文和密钥进行 AddRoundKey 操作，之后进入第 1 轮。异或是线性运算，当活跃字节遍历 $0 \dots 255$ 时，输出字节也会完整遍历 $0 \dots 255$。所以AddRoundKey操作不影响活跃性。
+\footnote{实验中要求的活跃字节是在矩阵坐标 $(1,0)$ 处的字节，即第二行第一列的字节。但是由于参考文献2的图片绘制精美，此处我想直接使用该文献中的图片来说明AddRoundKey不影响活跃字节的原因。}
+\subsubsection{SubBytes不影响活跃字节}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{SQUARE-04.jpg}
+\end{figure}
+SubBytes 是一个\(\{0,1\}^8 \to \{0,1\}^8\) 的映射。因此，活跃字节在经过 SubBytes 后仍然保持活跃，继续遍历 $0 \dots 255$。
+\subsubsection{ShiftRows不影响活跃字节数量，但是可能影响活跃字节的位置}
+ShiftRows 只是对状态矩阵的行进行循环移位，不改变字节的值。因此，活跃字节在经过 ShiftRows 后仍然保持活跃。
+由于第一行不进行移位，所以文献中并未改变活跃字节位置。但是对于实验中的位置，活跃字节在 $(1,0)$ 的情况，经过 ShiftRows 后它会移动到 $(1,3)$，但仍然是活跃的。只是换了一个位置。
+\subsubsection{列混淆（MixColumns）的作用}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{SQUARE-06.jpg}
+\end{figure}
+MixColumns 是 AES 中唯一的线性扩散层。它负责在列内进行线性组合,他相当于一个矩阵乘法
+\begin{equation*}
+\begin{bmatrix}
+y_0 \\
+y_1 \\
+y_2 \\
+y_3
+\end{bmatrix} = 
+\begin{bmatrix}
+02 & 03 & 01 & 01 \\
+01 & 02 & 03 & 01 \\
+01 & 01 & 02 & 03 \\
+03 & 01 & 01 & 02
+\end{bmatrix}
+\begin{bmatrix}
+x_0 \\
+x_1 \\
+x_2 \\
+x_3
+\end{bmatrix} = 
+\begin{bmatrix}
+2 \cdot x_0 + 3 \cdot x_1 + x_2 + x_3 \\
+x_0 + 2 \cdot x_1 + 3 \cdot x_2 + x_3 \\
+x_0 + x_1 + 2 \cdot x_2 + 3 \cdot x_3 \\
+3 \cdot x_0 + x_1 + x_2 + 2 \cdot x_3
+\end{bmatrix}
+\end{equation*}
+我们的输入是第一列的活跃字节\(x_0\)和其他列的常数字节。经过 MixColumns 后，第一列的输出将是所有输入字节的线性组合，只要包含\(x_0\)，都会变成活跃字节，因为当\(x_0\)遍历 \(0 \dots 255\) 时，输出也会完整遍历 \(0 \dots 255\)。因此，MixColumns 不会破坏活跃字节的性质，但它会将活跃字节的影响扩散到整列。
+\subsubsection{第一轮结束结果}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{SQUARE-02.jpg}
+\end{figure}
+经过第一轮加密，我们得到了第一列都为活跃字节的状态。
+\subsubsection{第二轮结束结果}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{SQUARE-07.jpg}
+\end{figure}
+接下来进入第二轮，第二轮的 SubBytes 和 ShiftRows 不会改变活跃字节的数量，但ShiftRows会将第一列的活跃字节扩散到其他列，然后 MixColumns 会将这些活跃字节的影响扩散到整列。最终，在第二轮结束时，状态矩阵中的所有字节都变成了活跃字节。
+\subsubsection{第三轮结束结果}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{SQUARE-08.jpg}
+\end{figure}
+到了第三轮发生了变化，在MixColumns之后，活跃字节的线性组合，就不一定还是活跃字节了，下面给出证明
+\begin{equation*}
+\begin{bmatrix}
+02 & 03 & 01 & 01 \\
+01 & 02 & 03 & 01 \\
+01 & 01 & 02 & 03 \\
+03 & 01 & 01 & 02
+\end{bmatrix}
+\begin{bmatrix}
+x_{i,0} \\
+x_{i,1} \\
+x_{i,2} \\
+x_{i,3}
+\end{bmatrix} = 
+\begin{bmatrix}
+2 \cdot x_{i,0} + 3 \cdot x_{i,1} + x_{i,2} + x_{i,3} \\
+x_{i,0} + 2 \cdot x_{i,1} + 3 \cdot x_{i,2} + x_{i,3} \\
+x_{i,0} + x_{i,1} + 2 \cdot x_{i,2} + 3 \cdot x_{i,3} \\
+3 \cdot x_{i,0} + x_{i,1} + x_{i,2} + 2 \cdot x_{i,3}
+\end{bmatrix}
+\end{equation*}
+根据活跃字节的定义，满足
+\[
+\bigoplus_{i=1}^{256} x_{i,j} = 0
+\]
+\subsection{实验过程与结果}
+
+\subsubsection{实验设置}
+构造 3 组 $\Lambda$-集合，每组包含 256 个明文，在矩阵坐标 $(1,0)$ 处遍历。分别测试 3 轮、4 轮以及无 MixColumns 情况下的异或和。
+我们选取的明文如下：
+% Plain 0
+\[
+P_0 = \begin{bmatrix}
+123 & 34 & 115 & 178 \\
+* & 195 & 84 & 74 \\
+198 & 133 & 232 & 32 \\
+225 & 167 & 181 & 207
+\end{bmatrix}
+\]
+
+% Plain 1
+\[
+P_1 = \begin{bmatrix}
+123 & 189 & 41 & 31 \\
+* & 25 & 112 & 183 \\
+202 & 38 & 211 & 215 \\
+218 & 188 & 117 & 34
+\end{bmatrix}
+\]
+% Plain 2
+\[
+P_2 = \begin{bmatrix}
+48 & 16 & 194 & 55 \\
+* & 237 & 85 & 225 \\
+108 & 218 & 83 & 186 \\
+154 & 71 & 135 & 139
+\end{bmatrix}
+\]
+我们选择的密钥如下：
+\[
+key = 0xabf266f7a189b08e5db4a56ea585ae0f
+\]
+\subsubsection{结果记录}
+根据实验运行结果，记录如下表：
+(三组明文得到的结果都是一样的，对于4轮的情况，由于数据太长，只写了第一个)
+\begin{table}[h]
+    \centering
+    \begin{tabular}{@{}cccc@{}}
+        \toprule
+        实验组别 & 轮数 & 包含 MixColumns & 异或结果 (XOR Sum) \\ \midrule
+        1        & 3    & 是               & $[0, 0, 0]$ (平衡)         \\
+        2        & 4    & 是               &$[213218948687531644049869954314427593478, ...]$ (不平衡) \\
+        3        & 4-31 & \textbf{否}      & $[0, 0, 0]$ (始终平衡)     \\ \bottomrule
+    \end{tabular}
+    \caption{不同配置下的 AES 异或实验结果}
+\end{table}
+
+\subsection{现象分析与讨论}
+
+\subsubsection{3 轮与 4 轮现象分析}
+当轮数为 3 时，由于 S 盒的非线性复杂度尚未完全积累，输出函数 $f(x)$ 的代数次数 $deg(f) < 8$。根据引理，在 $GF(2^8)$ 上：
+\begin{equation}
+    \sum_{x \in GF(2^8)} x^d = 0, \quad \text{for } 0 \le d < 255
+\end{equation}
+因此异或和为 0。当进入第 4 轮，代数次数迅速饱和，平衡性随之打破。
+
+\subsubsection{删除 MixColumns 的影响}
+实验发现，若删除 MixColumns，即使加密至 31 轮，平衡性依然保持。
+这是因为没有 MixColumns 时，每个字节的变换仅由 S 盒复合组成。由于 S 盒是置换（Permutation），多个置换的复合依然是置换。如果输入遍历了 $0 \dots 255$，输出必然也完整遍历 $0 \dots 255$。
+已知：
+\begin{equation}
+    \bigoplus_{i=0}^{255} i = 0
+\end{equation}
+故该现象在无扩散层时会永久保持。
+
+\subsection{实验结论}
+本实验成功验证了 AES 的积分特性。实验证明，列混淆（MixColumns）不仅提供了列内的线性扩散，更是打破代数平衡性、防止积分攻击的关键组件。没有 MixColumns 的 AES 即使轮数再多，也无法防御结构化攻击。
+\appendix
+\subsection{附录：完整 S1 盒差分分布表 (DDT)}
+\begin{center}
+\begin{small}
+\begin{longtable}{c|cccccccccccccccc}
+\caption{DES S1 盒完整差分分布表} \\
+\toprule
+Input Xor $\backslash$ Output Xor & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & A & B & C & D & E & F \\ \midrule
+\endfirsthead
+\toprule
+Input Xor $\backslash$ Output Xor  & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & A & B & C & D & E & F \\ \midrule
+\endhead
+\texttt{00} & 64 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+\texttt{01} & 0 & 0 & 0 & 6 & 0 & 2 & 4 & 4 & 0 & 10 & 12 & 4 & 10 & 6 & 2 & 4 \\
+\texttt{02} & 0 & 0 & 0 & 0 & 8 & 0 & 4 & 4 & 4 & 0 & 6 & 8 & 6 & 12 & 6 & 4 \\
+\texttt{03} & 14 & 4 & 2 & 2 & 10 & 6 & 4 & 2 & 6 & 4 & 4 & 0 & 2 & 2 & 2 & 0 \\
+\texttt{04} & 0 & 0 & 0 & 6 & 0 & 10 & 10 & 6 & 0 & 4 & 6 & 4 & 2 & 8 & 6 & 2 \\
+\texttt{05} & 4 & 8 & 6 & 2 & 2 & 4 & 4 & 2 & 0 & 4 & 4 & 0 & 12 & 2 & 4 & 6 \\
+\texttt{06} & 0 & 4 & 2 & 4 & 8 & 2 & 6 & 2 & 8 & 4 & 4 & 2 & 4 & 2 & 0 & 12 \\
+\texttt{07} & 2 & 4 & 10 & 4 & 0 & 4 & 8 & 4 & 2 & 4 & 8 & 2 & 2 & 2 & 4 & 4 \\
+\texttt{08} & 0 & 0 & 0 & 12 & 0 & 8 & 8 & 4 & 0 & 6 & 2 & 8 & 8 & 2 & 2 & 4 \\
+\texttt{09} & 10 & 2 & 4 & 0 & 2 & 4 & 6 & 0 & 2 & 2 & 8 & 0 & 10 & 0 & 2 & 12 \\
+\texttt{0A} & 0 & 8 & 6 & 2 & 2 & 8 & 6 & 0 & 6 & 4 & 6 & 0 & 4 & 0 & 2 & 10 \\
+\texttt{0B} & 2 & 4 & 0 & 10 & 2 & 2 & 4 & 0 & 2 & 6 & 2 & 6 & 6 & 4 & 2 & 12 \\
+\texttt{0C} & 0 & 0 & 0 & 8 & 0 & 6 & 6 & 0 & 0 & 6 & 6 & 4 & 6 & 6 & 14 & 2 \\
+\texttt{0D} & 6 & 6 & 4 & 8 & 4 & 8 & 2 & 6 & 0 & 6 & 4 & 6 & 0 & 2 & 0 & 2 \\
+\texttt{0E} & 0 & 4 & 8 & 8 & 6 & 6 & 4 & 0 & 6 & 6 & 4 & 0 & 0 & 4 & 0 & 8 \\
+\texttt{0F} & 2 & 0 & 2 & 4 & 4 & 6 & 4 & 2 & 4 & 8 & 2 & 2 & 2 & 6 & 8 & 8 \\
+\texttt{10} & 0 & 0 & 0 & 0 & 0 & 0 & 2 & 14 & 0 & 6 & 6 & 12 & 4 & 6 & 8 & 6 \\
+\texttt{11} & 6 & 8 & 2 & 4 & 6 & 4 & 8 & 6 & 4 & 0 & 6 & 6 & 0 & 4 & 0 & 0 \\
+\texttt{12} & 0 & 8 & 4 & 2 & 6 & 6 & 4 & 6 & 6 & 4 & 2 & 6 & 6 & 0 & 4 & 0 \\
+\texttt{13} & 2 & 4 & 4 & 6 & 2 & 0 & 4 & 6 & 2 & 0 & 6 & 8 & 4 & 6 & 4 & 6 \\
+\texttt{14} & 0 & 8 & 8 & 0 & 10 & 0 & 4 & 2 & 8 & 2 & 2 & 4 & 4 & 8 & 4 & 0 \\
+\texttt{15} & 0 & 4 & 6 & 4 & 2 & 2 & 4 & 10 & 6 & 2 & 0 & 10 & 0 & 4 & 6 & 4 \\
+\texttt{16} & 0 & 8 & 10 & 8 & 0 & 2 & 2 & 6 & 10 & 2 & 0 & 2 & 0 & 6 & 2 & 6 \\
+\texttt{17} & 4 & 4 & 6 & 0 & 10 & 6 & 0 & 2 & 4 & 4 & 4 & 6 & 6 & 6 & 2 & 0 \\
+\texttt{18} & 0 & 6 & 6 & 0 & 8 & 4 & 2 & 2 & 2 & 4 & 6 & 8 & 6 & 6 & 2 & 2 \\
+\texttt{19} & 2 & 6 & 2 & 4 & 0 & 8 & 4 & 6 & 10 & 4 & 0 & 4 & 2 & 8 & 4 & 0 \\
+\texttt{1A} & 0 & 6 & 4 & 0 & 4 & 6 & 6 & 6 & 6 & 2 & 2 & 0 & 4 & 4 & 6 & 8 \\
+\texttt{1B} & 4 & 4 & 2 & 4 & 10 & 6 & 6 & 4 & 6 & 2 & 2 & 4 & 2 & 2 & 4 & 2 \\
+\texttt{1C} & 0 & 10 & 10 & 6 & 6 & 0 & 0 & 12 & 6 & 4 & 0 & 0 & 2 & 4 & 4 & 0 \\
+\texttt{1D} & 4 & 2 & 4 & 0 & 8 & 0 & 0 & 2 & 10 & 0 & 2 & 6 & 6 & 6 & 14 & 0 \\
+\texttt{1E} & 0 & 2 & 6 & 0 & 14 & 2 & 0 & 0 & 6 & 4 & 10 & 8 & 2 & 2 & 6 & 2 \\
+\texttt{1F} & 2 & 4 & 10 & 6 & 2 & 2 & 2 & 8 & 6 & 8 & 0 & 0 & 0 & 4 & 6 & 4 \\
+\texttt{20} & 0 & 0 & 0 & 10 & 0 & 12 & 8 & 2 & 0 & 6 & 4 & 4 & 4 & 2 & 0 & 12 \\
+\texttt{21} & 0 & 4 & 2 & 4 & 4 & 8 & 10 & 0 & 4 & 4 & 10 & 0 & 4 & 0 & 2 & 8 \\
+\texttt{22} & 10 & 4 & 6 & 2 & 2 & 8 & 2 & 2 & 2 & 2 & 6 & 0 & 4 & 0 & 4 & 10 \\
+\texttt{23} & 0 & 4 & 4 & 8 & 0 & 2 & 6 & 0 & 6 & 6 & 2 & 10 & 2 & 4 & 0 & 10 \\
+\texttt{24} & 12 & 0 & 0 & 2 & 2 & 2 & 2 & 0 & 14 & 14 & 2 & 0 & 2 & 6 & 2 & 4 \\
+\texttt{25} & 6 & 4 & 4 & 12 & 4 & 4 & 4 & 10 & 2 & 2 & 2 & 0 & 4 & 2 & 2 & 2 \\
+\texttt{26} & 0 & 0 & 4 & 10 & 10 & 10 & 2 & 4 & 0 & 4 & 6 & 4 & 4 & 4 & 2 & 0 \\
+\texttt{27} & 10 & 4 & 2 & 0 & 2 & 4 & 2 & 0 & 4 & 8 & 0 & 4 & 8 & 8 & 4 & 4 \\
+\texttt{28} & 12 & 2 & 2 & 8 & 2 & 6 & 12 & 0 & 0 & 2 & 6 & 0 & 4 & 0 & 6 & 2 \\
+\texttt{29} & 4 & 2 & 2 & 10 & 0 & 2 & 4 & 0 & 0 & 14 & 10 & 2 & 4 & 6 & 0 & 4 \\
+\texttt{2A} & 4 & 2 & 4 & 6 & 0 & 2 & 8 & 2 & 2 & 14 & 2 & 6 & 2 & 6 & 2 & 2 \\
+\texttt{2B} & 12 & 2 & 2 & 2 & 4 & 6 & 6 & 2 & 0 & 2 & 6 & 2 & 6 & 0 & 8 & 4 \\
+\texttt{2C} & 4 & 2 & 2 & 4 & 0 & 2 & 10 & 4 & 2 & 2 & 4 & 8 & 8 & 4 & 2 & 6 \\
+\texttt{2D} & 6 & 2 & 6 & 2 & 8 & 4 & 4 & 4 & 2 & 4 & 6 & 0 & 8 & 2 & 0 & 6 \\
+\texttt{2E} & 6 & 6 & 2 & 2 & 0 & 2 & 4 & 6 & 4 & 0 & 6 & 2 & 12 & 2 & 6 & 4 \\
+\texttt{2F} & 2 & 2 & 2 & 2 & 2 & 6 & 8 & 8 & 2 & 4 & 4 & 6 & 8 & 2 & 4 & 2 \\
+\texttt{30} & 0 & 4 & 6 & 0 & 12 & 6 & 2 & 2 & 8 & 2 & 4 & 4 & 6 & 2 & 2 & 4 \\
+\texttt{31} & 4 & 8 & 2 & 10 & 2 & 2 & 2 & 2 & 6 & 0 & 0 & 2 & 2 & 4 & 10 & 8 \\
+\texttt{32} & 4 & 2 & 6 & 4 & 4 & 2 & 2 & 4 & 6 & 6 & 4 & 8 & 2 & 2 & 8 & 0 \\
+\texttt{33} & 4 & 4 & 6 & 2 & 10 & 8 & 4 & 2 & 4 & 0 & 2 & 2 & 4 & 6 & 2 & 4 \\
+\texttt{34} & 0 & 8 & 16 & 6 & 2 & 0 & 0 & 12 & 6 & 0 & 0 & 0 & 0 & 8 & 0 & 6 \\
+\texttt{35} & 2 & 2 & 4 & 0 & 8 & 0 & 0 & 0 & 14 & 4 & 6 & 8 & 0 & 2 & 14 & 0 \\
+\texttt{36} & 2 & 6 & 2 & 2 & 8 & 0 & 2 & 2 & 4 & 2 & 6 & 8 & 6 & 4 & 10 & 0 \\
+\texttt{37} & 2 & 2 & 12 & 4 & 2 & 4 & 4 & 10 & 4 & 4 & 2 & 6 & 0 & 2 & 2 & 4 \\
+\texttt{38} & 0 & 6 & 2 & 2 & 2 & 0 & 2 & 2 & 4 & 6 & 4 & 4 & 4 & 6 & 10 & 10 \\
+\texttt{39} & 6 & 2 & 2 & 4 & 12 & 6 & 4 & 8 & 4 & 0 & 2 & 4 & 2 & 4 & 4 & 0 \\
+\texttt{3A} & 6 & 4 & 6 & 4 & 6 & 8 & 0 & 6 & 2 & 2 & 6 & 2 & 2 & 6 & 4 & 0 \\
+\texttt{3B} & 2 & 6 & 4 & 0 & 0 & 2 & 4 & 6 & 4 & 6 & 8 & 6 & 4 & 4 & 6 & 2 \\
+\texttt{3C} & 0 & 10 & 4 & 0 & 12 & 0 & 4 & 2 & 6 & 0 & 4 & 12 & 4 & 4 & 2 & 0 \\
+\texttt{3D} & 0 & 8 & 6 & 2 & 2 & 6 & 0 & 8 & 4 & 4 & 0 & 4 & 0 & 12 & 4 & 4 \\
+\texttt{3E} & 4 & 8 & 2 & 2 & 2 & 4 & 4 & 14 & 4 & 2 & 0 & 2 & 0 & 8 & 4 & 4 \\
+\texttt{3F} & 4 & 8 & 4 & 2 & 4 & 0 & 2 & 4 & 4 & 2 & 4 & 8 & 8 & 6 & 2 & 2 \\ \bottomrule
+\end{longtable}
+\end{small}
+\end{center}
+
+\end{document}

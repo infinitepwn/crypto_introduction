@@ -2,6 +2,9 @@ import aes
 import random
 plain = [[[random.randint(0, 255) for _ in range(4)] for _ in range(4)] for _ in range(3)]
 key = random.randbytes(16)
+for i in range(3):
+    print(f"plain{i}:")
+    print(plain[i])
 print("key:", key.hex())
 def xor(aes_,plain):
     cipher = [[] for _ in range(3)]
@@ -46,4 +49,4 @@ for Round in range(4,32):
         print(xor1(aes.AES(N_ROUNDS=Round),plain))
         success = False
 if success:
-    print("所有轮数都通过了测试")
+    print("所有轮数都通过了测试,异或结果都为0")
