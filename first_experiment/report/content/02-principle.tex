@@ -1,0 +1,6 @@
+% 实验原理
+\subsection{实验原理}
+\subsubsection{差分分布表定义}
+对于 $6 \to 4$ 位的 S 盒，输入差分 $\alpha$ 与输出差分 $\beta$ 的关联强度由 $N_S(\alpha, \beta)$ 衡量。其数学定义为：在一个输入空间内，满足特定输入差分导致特定输出差分的输入值数量。
+$$ N_S(\alpha, \beta) = \# \{ X \in \{0,1\}^6 \mid S(X) \oplus S(X \oplus \alpha) = \beta \} $$
+其中 $X$ 遍历所有 64 种输入可能。

@@ -1,0 +1,36 @@
+\documentclass[12pt,a4paper]{article}
+
+% ===== 配置层 =====
+\input{config/packages}
+\input{config/format}
+\input{config/listing}
+
+% ===== 标题 =====
+\title{\textbf{\LARGE{密码学引论第一次实验}}}
+\author{\textbf{江李阳，王建一，邱泽辉}}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{fancy}
+
+% ===== 内容层 =====
+\input{content/01-intro}
+\input{content/02-principle}
+\input{content/03-analysis}
+\input{content/11-intro}
+\input{content/12-principle}
+\input{content/13-analysis}
+\input{content/14-conclusion}
+\input{content/15-process-results}
+
+
+% ===== 附录 =====
+\input{content/appendix}
+
+% ===== 参考文献 =====
+\bibliographystyle{plain}
+\bibliography{bib/ref}
+
+\end{document}

@@ -1,0 +1,18 @@
+% 实验二分析与讨论
+\subsection{现象分析与讨论}
+
+\subsubsection{3 轮与 4 轮现象分析}
+当轮数为 3 时，由于 S 盒的非线性复杂度尚未完全积累，输出函数 $f(x)$ 的代数次数 $deg(f) < 8$。根据引理，在 $GF(2^8)$ 上：
+\begin{equation}
+    \sum_{x \in GF(2^8)} x^d = 0, \quad \text{for } 0 \le d < 255
+\end{equation}
+因此异或和为 0。当进入第 4 轮，代数次数迅速饱和，平衡性随之打破。
+
+\subsubsection{删除 MixColumns 的影响}
+实验发现，若删除 MixColumns，即使加密至 31 轮，平衡性依然保持。
+这是因为没有 MixColumns 时，每个字节的变换仅由 S 盒复合组成。由于 S 盒是置换（Permutation），多个置换的复合依然是置换。如果输入遍历了 $0 \dots 255$，输出必然也完整遍历 $0 \dots 255$。
+已知：
+\begin{equation}
+    \bigoplus_{i=0}^{255} i = 0
+\end{equation}
+故该现象在无扩散层时会永久保持。

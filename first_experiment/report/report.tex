@@ -62,6 +62,13 @@
     left=10pt, right=10pt, top=5pt, bottom=5pt
 }
 
+%--- 代码设置---
+\lstset{
+    basicstyle = \ttfamily,
+    keywordstyle = \color{blue},
+    frame = single
+}
+
 % --- 标题区域 ---
 \title{
 \textbf{\LARGE{密码学引论第一次实验}}\\[0.5em]
@@ -427,5 +434,8 @@ Input Xor $\backslash$ Output Xor  & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & A &
 \end{longtable}
 \end{small}
 \end{center}
+
+
+\input{code.tex}
 
 \end{document}
