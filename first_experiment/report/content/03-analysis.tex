@@ -1,0 +1,57 @@
+% 表格,数据分析
+\subsection{实验数据分析}
+
+\subsubsection{差分分布表 (DDT) 概览}
+本实验生成的 S1 盒 DDT 规模为 $64 \times 16$。表中的数值反映了特定差分传播的频数。具体差分分布表见附录A。
+\subsubsection{高概率差分路径}
+实验数据如下表所示：
+
+\begin{table}[H]
+\centering
+\caption{S1 盒高概率差分路径汇总表}
+\begin{small}
+\begin{longtable}{|c|c|c|p{8cm}|}
+\hline
+\textbf{排名} & \textbf{计数} & \textbf{概率} & \textbf{(输入差分, 输出差分) 列表} \\ \hline
+1 & 64 & 1.000000 & (0x00, 0x0) \\ \hline
+2 & 16 & 0.250000 & (0x34, 0x2) \\ \hline
+3 & 14 & 0.218750 & (0x03, 0x0), (0x0C, 0xE), (0x10, 0x7), (0x1D, 0xE), (0x1E, 0x4), (0x24, 0x8), (0x24, 0x9), (0x29, 0x9), (0x2A, 0x9), (0x35, 0x8), (0x35, 0xE), (0x3E, 0x7) \\ \hline
+4 & 12 & 0.187500 & (0x01, 0xA), (0x02, 0xC), (0x05, 0xC), (0x06, 0xF), (0x08, 0x3), (0x09, 0xF), (0x0B, 0xF), (0x10, 0xB), (0x1C, 0x7), (0x20, 0x5), (0x20, 0xF), (0x24, 0x0), (0x25, 0x3), (0x28, 0x0), (0x28, 0x6), (0x2B, 0x0), (0x2E, 0xC), (0x30, 0x4), (0x34, 0x7), (0x37, 0x2), (0x39, 0x4), (0x3C, 0x4), (0x3C, 0xB), (0x3D, 0xD) \\ \hline
+\end{longtable}
+\end{small}
+\end{table}
+
+\subsubsection{概率传播种类统计}
+实验统计显示，该 S 盒共有 9 种不同的非零计数值，对应 9 种传播概率：
+\begin{itemize}
+    \item \textbf{低概率路径}：计数为 2, 4, 6，对应的最低传播概率为 $0.0312$。
+    \item \textbf{中概率路径}：计数为 8, 10, 12。
+    \item \textbf{高概率路径}：计数为 14, 16，最高传播概率达到 $0.2500$（即 $16/64$）。
+\end{itemize}
+
+\subsubsection{差分碰撞分析（输入非 0 输出为 0）}
+实验结果表明，当输入差分 $\alpha \neq 0$ 时，输出差分 $\beta$ 可能为 0。
+\textbf{原因分析：}
+DES 的 S 盒是一个从 6 位到 4 位的压缩映射。根据抽屉原理（Pigeonhole Principle），必然存在多个不同的输入映射到相同的输出。即：
+$$ \exists X_1 \neq X_2, \text{ s.t. } S(X_1) = S(X_2) \implies S(X_1) \oplus S(X_2) = 0 $$
+当 $\alpha = X_1 \oplus X_2$ 时，该输入差分会导致输出差分为 0。这在差分分析中意味着该 S 盒在该路径下是“不活动的”。
+\begin{table}[h!]
+\centering
+\caption{S1 盒差分碰撞分布表 ($\alpha \neq 0, \beta = 0$)}
+\begin{small}
+\begin{tabular}{|cc|cc|cc|}
+\hline
+\textbf{输入差分} & \textbf{碰撞频数} & \textbf{输入差分} & \textbf{碰撞频数} & \textbf{输入差分} & \textbf{碰撞频数} \\ \hline
+0x03 & 14 & 0x25 & 6  & 0x2C & 4  \\
+0x24 & 12 & 0x2D & 6  & 0x31 & 4  \\
+0x28 & 12 & 0x2E & 6  & 0x32 & 4  \\
+0x2B & 12 & 0x39 & 6  & 0x33 & 4  \\
+0x09 & 10 & 0x3A & 6  & 0x3E & 4  \\
+0x22 & 10 & 0x05 & 4  & 0x3F & 4  \\
+0x27 & 10 & 0x17 & 4  & 0x07 & 2  \\ \cline{5-6} 
+0x0D & 6  & 0x1B & 4  & 0x0B & 2  \\
+0x11 & 6  & 0x1D & 4  & 0x0F & 2  \\
+\dots & \dots & 0x29 & 4  & \dots & \dots \\ \hline
+\end{tabular}
+\end{small}
+\end{table}
