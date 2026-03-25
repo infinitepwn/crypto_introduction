@@ -34,22 +34,30 @@ table = df.to_string(col_space=4, justify='center')
 print(table)
 #该DDT中概率最大的（输入差分，输出差分）对应有多少种情况？概率为多少？
 DDT = np.array(DDT)
-size = 16*64  # 输入空间大小
-sortddt = np.argsort(DDT.ravel())[::-1]
-import numpy as np
+size = 64  # 输入空间大小
+
 
 print("概率最大的前5个（输入差分，输出差分）及其概率：")
-for i in range(5):
-    idx = sortddt[i]
-    # 使用 unravel_index 获取坐标
-    r, c = np.unravel_index(idx, DDT.shape)
-    row, col = int(r), int(c)
-    val = int(DDT[row, col])
-    prob = val / size
-    print(f"{i+1:>3}  |  {prob:<10.6f}  |  (0x{row:02X}, 0x{col:X})")
+temp_ddt = DDT.copy()
+
+counts = sorted(list(set(temp_ddt.flatten())), reverse=True)
+top_5_counts = counts[:5]
+
+print(f"{'排名':<4} | {'计数':<4} | {'概率':<10} | {'(输入差分, 输出差分)列表'}")
+print("-" * 60)
+
+for rank, count in enumerate(top_5_counts, 1):
+    prob = count / 64.0 
+    
+    coords = np.argwhere(temp_ddt == count)
+    
+    res = ", ".join([f"(0x{r:02X}, 0x{c:X})" for r, c in coords])
+    
+    print(f"{rank:>3}  | {count:>4} | {prob:<10.6f} | {res}")
 
 ddt = np.array(DDT).flatten()
 
+# 该 S 盒共有多少种概率传播？每种概率传播的概率是多少？频数不为0，都是可能的传播
 eff_ddt = ddt[ddt > 0]
 
 eff_ddt = sorted(list(set(eff_ddt)))
