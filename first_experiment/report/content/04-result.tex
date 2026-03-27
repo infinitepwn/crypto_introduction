@@ -1,16 +1,143 @@
-\subsection{实验结果}
-\begin{figure}[H]
+\subsection{S$_1$ 盒的实验结果及分析}
+根据程序计算得到的 S$_1$ 盒差分分布表可知，其最大差分传播次数为 16，因此最大差分传播概率为
+\[
+P_{\max}=\frac{16}{64}=0.25.
+\]
+进一步统计发现，达到该最大概率的差分对为 $(\Delta x,\Delta y)=(52,2)$。此外，对差分分布表中所有非零项对应的传播概率进行整理可得，S$_1$ 盒共具有 8 种非零差分传播概率，分别为
+\[
+0.03125,\ 0.0625,\ 0.09375,\ 0.125,\ 0.15625,\ 0.1875,\ 0.21875,\ 0.25.
+\]
+这说明 S$_1$ 盒的差分传播分布较为分散，避免了大量高概率差分路径的集中出现，从而增强了其抗差分密码分析的能力。
+
+\begin{table}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{figure/题目一S1.png}
-    \caption{使用S1的结果}
-\end{figure}
-\begin{figure}[H]
+    \caption{S$_1$ 盒差分分布表的主要统计结果}
+    \label{tab:s1-summary}
+    \begin{tabular}{cc}
+        \hline
+        统计指标 & 结果 \\
+        \hline
+        最大差分传播次数 & 16 \\
+        最大差分传播概率 & 0.25 \\
+        达到最大概率的差分对 $(\Delta x,\Delta y)$ & $(52,2)$ \\
+        非零差分传播概率种类数 & 8 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{figure/题目一S2.png}
-    \caption{使用S2的结果}
-\end{figure}
-\begin{figure}[H]
+    \caption{S$_1$ 盒差分分布表的部分节选}
+    \label{tab:s1-ddt-sample}
+    \scriptsize
+    \setlength{\tabcolsep}{4pt}
+    \begin{tabular}{c|cccccccccccccccc}
+        \hline
+        $\Delta x$ & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 & 11 & 12 & 13 & 14 & 15 \\
+        \hline
+        0  & 64 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+        1  & 0 & 0 & 0 & 6 & 0 & 2 & 4 & 4 & 0 & 10 & 12 & 4 & 10 & 6 & 2 & 4 \\
+        52 & 0 & 8 & 16 & 6 & 2 & 0 & 0 & 12 & 6 & 0 & 0 & 0 & 8 & 0 & 0 & 6 \\
+        \hline
+    \end{tabular}
+\end{table}
+\subsection{S$_2$ 盒实验结果分析}
+
+根据程序计算得到的 S$_2$ 盒差分分布表可知，其最大差分传播次数为 16，因此最大差分传播概率为
+\[
+P_{\max}=\frac{16}{64}=0.25.
+\]
+进一步统计发现，达到该最大概率的差分对共有 5 个，分别为
+\[
+(8,10),\ (29,7),\ (54,13),\ (59,0),\ (61,1).
+\]
+
+对差分分布表中所有非零项对应的传播概率进行整理可得，S$_2$ 盒共具有 8 种非零差分传播概率，分别为
+\[
+0.03125,\ 0.0625,\ 0.09375,\ 0.125,\ 0.15625,\ 0.1875,\ 0.21875,\ 0.25.
+\]
+这说明 S$_2$ 盒的差分传播概率分布较为分散，并未集中在极少数高概率差分路径上，从而有助于增强其抗差分密码分析的能力。
+
+此外，S$_2$ 盒中达到最大概率的差分对数量多于 S$_1$ 盒，表明不同 S 盒在差分传播结构上存在差异；这也说明在 DES 的整体设计中，各个 S 盒通过不同的差分特征共同提升了系统的安全性。
+\begin{table}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{figure/题目一S3.png}
-    \caption{使用S3的结果}
-\end{figure}
+    \caption{S$_2$ 盒差分分布表的主要统计结果}
+    \label{tab:s2-summary}
+    \begin{tabular}{p{6cm}p{8cm}}
+        \hline
+        统计指标 & 结果 \\
+        \hline
+        最大差分传播次数 & 16 \\
+        最大差分传播概率 & 0.25 \\
+        达到最大概率的差分对 $(\Delta x,\Delta y)$ 
+        & $(8,10),\ (29,7),\ (54,13),\ (59,0),\ (61,1)$ \\
+        非零差分传播概率种类数 & 8 \\
+        \hline
+    \end{tabular}
+\end{table}
+\begin{table}[htbp]
+    \centering
+    \caption{S$_2$ 盒差分分布表的部分节选}
+    \label{tab:s2-ddt-sample}
+    \scriptsize
+    \setlength{\tabcolsep}{4pt}
+    \begin{tabular}{c|cccccccccccccccc}
+        \hline
+        $\Delta x$ & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 & 11 & 12 & 13 & 14 & 15 \\
+        \hline
+        0 & 64 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+        1 & 0 & 0 & 0 & 4 & 0 & 2 & 6 & 4 & 0 & 14 & 8 & 6 & 8 & 4 & 6 & 2 \\
+        8 & 0 & 0 & 0 & 4 & 0 & 4 & 0 & 8 & 0 & 10 & 16 & 6 & 6 & 0 & 6 & 4 \\
+        \hline
+    \end{tabular}
+\end{table}
+\subsection{S$_3$ 盒实验结果分析}
+
+根据程序计算得到的 S$_3$ 盒差分分布表可知，其最大差分传播次数同样为 16，因此最大差分传播概率为
+\[
+P_{\max}=\frac{16}{64}=0.25.
+\]
+进一步统计发现，达到该最大概率的差分对共有 4 个，分别为
+\[
+(32,13),\ (39,3),\ (45,7),\ (52,4).
+\]
+
+对差分分布表中所有非零项对应的传播概率进行整理可得，S$_3$ 盒同样具有 8 种非零差分传播概率，分别为
+\[
+0.03125,\ 0.0625,\ 0.09375,\ 0.125,\ 0.15625,\ 0.1875,\ 0.21875,\ 0.25.
+\]
+这表明 S$_3$ 盒的差分传播规律与 S$_1$、S$_2$ 盒总体一致，即最大差分传播概率受到控制，且概率分布较为分散。
+
+值得注意的是，S$_3$ 盒达到最大概率的差分对数量少于 S$_2$ 盒，但多于 S$_1$ 盒，这进一步反映出不同 S 盒在差分特性上的差异。总体来看，S$_3$ 盒同样满足 DES 对抗差分分析的设计要求。
+\begin{table}[htbp]
+    \centering
+    \caption{S$_3$ 盒差分分布表的主要统计结果}
+    \label{tab:s3-summary}
+    \begin{tabular}{p{6cm}p{8cm}}
+        \hline
+        统计指标 & 结果 \\
+        \hline
+        最大差分传播次数 & 16 \\
+        最大差分传播概率 & 0.25 \\
+        达到最大概率的差分对 $(\Delta x,\Delta y)$ 
+        & $(32,13),\ (39,3),\ (45,7),\ (52,4)$ \\
+        非零差分传播概率种类数 & 8 \\
+        \hline
+    \end{tabular}
+\end{table}
+\begin{table}[htbp]
+    \centering
+    \caption{S$_3$ 盒差分分布表的部分节选}
+    \label{tab:s3-ddt-sample}
+    \scriptsize
+    \setlength{\tabcolsep}{4pt}
+    \begin{tabular}{c|cccccccccccccccc}
+        \hline
+        $\Delta x$ & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 & 11 & 12 & 13 & 14 & 15 \\
+        \hline
+        0  & 64 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+        1  & 0 & 0 & 0 & 2 & 0 & 4 & 2 & 12 & 0 & 14 & 0 & 4 & 8 & 2 & 6 & 10 \\
+        32 & 0 & 0 & 0 & 0 & 0 & 4 & 4 & 8 & 0 & 2 & 2 & 4 & 10 & 16 & 12 & 2 \\
+        \hline
+    \end{tabular}
+\end{table}
