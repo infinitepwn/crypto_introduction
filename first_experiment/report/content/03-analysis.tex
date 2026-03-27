@@ -35,7 +35,7 @@
 DES 的 S 盒是一个从 6 位到 4 位的压缩映射。根据抽屉原理（Pigeonhole Principle），必然存在多个不同的输入映射到相同的输出。即：
 $$ \exists X_1 \neq X_2, \text{ s.t. } S(X_1) = S(X_2) \implies S(X_1) \oplus S(X_2) = 0 $$
 当 $\alpha = X_1 \oplus X_2$ 时，该输入差分会导致输出差分为 0。这在差分分析中意味着该 S 盒在该路径下是“不活动的”。
-\begin{table}[h!]
+\begin{table}[H]
 \centering
 \caption{S1 盒差分碰撞分布表 ($\alpha \neq 0, \beta = 0$)}
 \begin{small}
