@@ -62,13 +62,6 @@
     left=10pt, right=10pt, top=5pt, bottom=5pt
 }
 
-%--- 代码设置---
-\lstset{
-    basicstyle = \ttfamily,
-    keywordstyle = \color{blue},
-    frame = single
-}
-
 % --- 标题区域 ---
 \title{
 \textbf{\LARGE{密码学引论第一次实验}}\\[0.5em]
@@ -77,27 +70,6 @@
 \date{\today}
 
 \begin{document}
-
-
-
-\begin{thebibliography}{99}
-
-\bibitem{Knudsen2002}
-L.~Knudsen and D.~Wagner.
-\newblock Integral Cryptanalysis.
-\newblock In {\em Fast Software Encryption (FSE 2002)}, 
-  LNCS 2365, pages 112--127. Springer-Verlag, 2002.
-\newblock Available at: \url{https://www.iacr.org/archive/fse2002/23650114/23650114.pdf}
-\bibitem{WongBlock}
-David Wong.
-\newblock Block Breakers: An Interactive Tutorial on Block Ciphers.
-\newblock URL: \url{https://www.davidwong.fr/blockbreakers/index.html}
-
-\bibitem{ZhihuAES}
-知乎专栏.
-\newblock AES 积分攻击（Integral Cryptanalysis）深度解析.
-\newblock URL: \url{https://zhuanlan.zhihu.com/p/589141550}
-\end{thebibliography}
 
 \maketitle
 \thispagestyle{fancy} % 首页也显示漂亮页眉
@@ -279,10 +251,12 @@ x_{i,0} + x_{i,1} + 2 \cdot x_{i,2} + 3 \cdot x_{i,3} \\
 3 \cdot x_{i,0} + x_{i,1} + x_{i,2} + 2 \cdot x_{i,3}
 \end{bmatrix}
 \end{equation*}
-根据活跃字节的定义，满足
+根据活跃字节的定义，这个字节的取值范围应该遍历0-255，但是由于 MixColumns 的线性组合，可能会出现某些输出字节的取值范围被限制在一个子集内，导致无法遍历完整的 $0 \dots 255$。因此，在第三轮结束时，状态矩阵中的某些字节可能不再是活跃字节。
+满足
 \[
 \bigoplus_{i=1}^{256} x_{i,j} = 0
 \]
+但是
 \subsection{实验过程与结果}
 
 \subsubsection{实验设置}
@@ -434,8 +408,23 @@ Input Xor $\backslash$ Output Xor  & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & A &
 \end{longtable}
 \end{small}
 \end{center}
+\begin{thebibliography}{99}
 
+\bibitem{Knudsen2002}
+L.~Knudsen and D.~Wagner.
+\newblock Integral Cryptanalysis.
+\newblock In {\em Fast Software Encryption (FSE 2002)}, 
+  LNCS 2365, pages 112--127. Springer-Verlag, 2002.
+\newblock Available at: \url{https://www.iacr.org/archive/fse2002/23650114/23650114.pdf}
+\bibitem{WongBlock}
+David Wong.
+\newblock Block Breakers: An Interactive Tutorial on Block Ciphers.
+\newblock URL: \url{https://www.davidwong.fr/blockbreakers/index.html}
 
-\input{code.tex}
+\bibitem{ZhihuAES}
+知乎专栏.
+\newblock AES 积分攻击（Integral Cryptanalysis）深度解析.
+\newblock URL: \url{https://zhuanlan.zhihu.com/p/589141550}
+\end{thebibliography}
 
 \end{document}
