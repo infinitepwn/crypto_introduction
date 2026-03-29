@@ -7,15 +7,25 @@
 \input{config/format}
 \input{config/listing}
 
+
+%=== 配置封面 ===
+\renewcommand{\ReportName}{江李阳, 王健一,邱泽辉}       % 合作成员
+\renewcommand{\ReportID}{202400460042, 202400460037,202400460046}  % 学号
+\renewcommand{\ReportMajor}{密码科学与技术}% 专业            % 专业
+
+
 % ===== 标题 =====
-\title{\textbf{\LARGE{密码学引论第一次实验}}}
-\author{\textbf{江李阳202400460042，王健一202400460037，邱泽辉202400460046}}
-\date{\today}
+% \title{\textbf{\LARGE{密码学引论第一次实验}}}
+% \author{\textbf{江李阳202400460042，王健一202400460037，邱泽辉202400460046}}
+% \date{\today}
 
 \begin{document}
 
 \maketitle
 \thispagestyle{fancy}
+\newpage
+\tableofcontents
+\newpage
 
 % ===== 内容层 =====
 \input{content/01-intro}
@@ -25,9 +35,10 @@
 \input{content/05-conclusion}
 \input{content/11-intro}
 \input{content/12-principle}
+\input{content/15-process-results}
 \input{content/13-analysis}
 \input{content/14-conclusion}
-\input{content/15-process-results}
+
 
 
 % ===== 附录 =====
