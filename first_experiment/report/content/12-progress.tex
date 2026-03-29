@@ -1,0 +1,20 @@
+%实验流程
+\subsection{实验设计与流程}
+
+\subsubsection{明文集合构造}
+构造 3 组特殊的明文集合 $\mathcal{P} = \{P_0, P_1, \dots, P_{255}\}$。
+每组集合中，选定一个字节位置 $i$（图中标红位置）作为 \textbf{活跃字节}，使其取遍 $0x00$ 到 $0xFF$：
+\begin{equation}
+P_j^{(i)} = j, \quad j \in \{0, 1, \dots, 255\}
+\end{equation}
+其余 15 个字节位置固定为常数 $C$。
+
+\subsubsection{实验操作步骤}
+\begin{enumerate}
+    \item \textbf{加密阶段}：选择随机密钥 $K$，对每个明文集合执行 3 轮完整的 AES 加密（包含 SubBytes, ShiftRows, MixColumns, AddRoundKey）。
+    \item \textbf{求和阶段}：对每组得到的 256 个密文在 $GF(2^8)$ 空间内进行异或（XOR）求和：
+    \begin{equation}
+    S = \bigoplus_{j=0}^{255} C_j
+    \end{equation}
+    \item \textbf{对比实验}：分别测试 4 轮加密情况，以及删除列混合（MixColumns）变换后的情况。
+\end{enumerate}
