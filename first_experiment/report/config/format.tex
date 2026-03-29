@@ -13,8 +13,8 @@
 % --- 页眉页脚设置 ---
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{\textcolor{macblue}{\textbf{Experiment Report}}} % 左侧显示实验报告
-\fancyhead[R]{\textbf{First Experiment}} % 右侧显示实验名称
+\fancyhead[L]{\textcolor{macblue}{\textbf{密码学引论}}} % 左侧显示实验报告
+\fancyhead[R]{\textbf{第一次实验实验报告}} % 右侧显示实验名称
 \fancyfoot[C]{\thepage}
 \renewcommand{\headrulewidth}{0.8pt}
 \renewcommand{\headrule}{\hbox to\headwidth{\color{macblue}\leaders\hrule height \headrulewidth\hfill}}
@@ -48,3 +48,37 @@
 }
 
 \geometry{left=2.5cm, right=2.5cm, top=3cm, bottom=3cm}
+
+
+
+%--- 新增封面 ---
+% 封面变量
+\newcommand{\ReportCourse}{密码学引论实验报告}
+\newcommand{\ReportLogo}{figure/logo_sduWithText.jpg}
+\newcommand{\ReportName}{}
+\newcommand{\ReportID}{}
+\newcommand{\ReportMajor}{}
+
+% 封面重定义
+\renewcommand{\maketitle}{
+    \begin{titlepage}
+        \thispagestyle{empty}
+        \centering
+        \vspace*{0cm}
+        \includegraphics[width=0.5\textwidth]{\ReportLogo}
+        \par\vspace{1.5cm}
+        % 替换为通用命令：加粗+无衬线字体+大号字号（等效黑体二号）
+        {\bfseries\sffamily\Large \ReportCourse \par}
+        \vspace{3cm}
+        \renewcommand{\arraystretch}{2}
+        % 标准正文字号（等效小四）
+        \normalsize
+        \begin{tabular}{c}
+            姓名：\underline{\makebox[8cm][c]{\ReportName}} \\
+            学号：\underline{\makebox[8cm][c]{\ReportID}} \\
+            专业：\underline{\makebox[8cm][c]{\ReportMajor}} \\
+            日期：\underline{\makebox[8cm][c]{\today}} \\
+        \end{tabular}
+        \vfill
+    \end{titlepage}
+}
