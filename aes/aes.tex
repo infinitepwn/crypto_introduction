@@ -10,6 +10,7 @@
 \usepackage{hyperref}                   % 超链接
 \usepackage{enumitem}                   % 列表环境定制
 \usepackage{ctex}                    % 中文支持
+
 % ========== 颜色定义 ==========
 \definecolor{aesblue}{RGB}{41, 128, 185}
 \definecolor{aesdark}{RGB}{44, 62, 80}
@@ -122,12 +123,12 @@ S 盒的设计并非随机生成，而是基于严格的代数结构，其构造
     \textit{意义：求逆运算具有极高的非线性度，能有效抵抗线性密码分析。}
 
     \item \textbf{仿射变换 (Affine Transformation)} \\
-    对上一步得到的 $b$ 进行线性变换并异或一个常数向量。设 $b$ 的位表示为 $(b_0, b_1, \dots, b_7)$，变换后的位为 $(s_0, s_1, \dots, s_7)$：
+    对 $b$ 进行线性变换并异或常数向量。
     
     \begin{tcolorbox}[mathbox]
     $$
     \begin{bmatrix} s_0 \\ s_1 \\ s_2 \\ s_3 \\ s_4 \\ s_5 \\ s_6 \\ s_7 \end{bmatrix} = 
-    \begin{bmatrix} 
+    \underbrace{\begin{bmatrix} 
     1 & 0 & 0 & 0 & 1 & 1 & 1 & 1 \\
     1 & 1 & 0 & 0 & 0 & 1 & 1 & 1 \\
     1 & 1 & 1 & 0 & 0 & 0 & 1 & 1 \\
@@ -136,9 +137,9 @@ S 盒的设计并非随机生成，而是基于严格的代数结构，其构造
     0 & 1 & 1 & 1 & 1 & 1 & 0 & 0 \\
     0 & 0 & 1 & 1 & 1 & 1 & 1 & 0 \\
     0 & 0 & 0 & 1 & 1 & 1 & 1 & 1 
-    \end{bmatrix}
+    \end{bmatrix}}_{\text{仿射矩阵}}
     \begin{bmatrix} b_0 \\ b_1 \\ b_2 \\ b_3 \\ b_4 \\ b_5 \\ b_6 \\ b_7 \end{bmatrix} \oplus
-    \begin{bmatrix} 1 \\ 1 \\ 0 \\ 0 \\ 0 \\ 1 \\ 1 \\ 0 \end{bmatrix}
+    \underbrace{\begin{bmatrix} 1 \\ 1 \\ 0 \\ 0 \\ 0 \\ 1 \\ 1 \\ 0 \end{bmatrix}}_{\text{0x63}}
     $$
     \end{tcolorbox}
     \textit{注：最后的常数向量对应十六进制 \texttt{0x63}。}
@@ -202,6 +203,194 @@ AES 算法通过密钥编排方案将初始密钥扩展为一个包含多个字 
     \item \textbf{SubWord：} 对字中的每个字节进行 S 盒替换。
     \item \textbf{Rcon (轮常数)：} 消除对称性，其值为 $[x^{i-1}, 00, 00, 00]$。
 \end{itemize}
+
+\subsection{5.1 密钥扩展算法}
+
+给定一个 $N_k$ 字（$N_k = 4, 6, 8$ 分别对应 128、192、256 位密钥）的初始密钥，扩展生成 $N_r + 1$ 个轮密钥，每个轮密钥由 $N_b = 4$ 字组成（$N_r = 10, 12, 14$）。
+
+扩展后的密钥总字节数为 $N_b \times (N_r + 1) = 4 \times (N_r + 1)$ 字。
+
+\begin{tcolorbox}[mathbox]
+\textbf{密钥扩展核心公式：}
+\end{tcolorbox}
+\begin{align}
+w[i] = 
+\begin{cases}
+\text{Key}[i], & i < N_k \\[4pt]
+w[i-N_k] \oplus \text{SubWord}(\text{RotWord}(w[i-1])) \oplus \text{Rcon}[i/N_k], & i \geqslant N_k \text{ 且 } i \bmod N_k = 0 \\[6pt]
+w[i-N_k] \oplus w[i-1], & \text{其他情况}
+\end{cases}
+\end{align}
+
+其中：
+\begin{itemize}
+    \item $w[i]$ 表示扩展后的第 $i$ 个字（0-indexed）
+    \item $N_k$ 为初始密钥的字数（4、6 或 8）
+    \item $\text{RotWord}([a_0, a_1, a_2, a_3]) = [a_1, a_2, a_3, a_0]$（循环左移 1 字节）
+    \item $\text{SubWord}$ 对字的每个字节执行 S 盒替换
+\end{itemize}
+
+\subsection{5.2 轮常数 Rcon}
+
+Rcon（Round Constant）用于消除密钥扩展中的对称性，防止轮密钥之间存在简单的代数关系。
+
+\begin{tcolorbox}[notebox=Rcon 表格]
+\begin{center}
+\begin{tabular}{c|c|c}
+\hline
+\textbf{轮数 $i$} & \textbf{Rcon[$i$]} (十六进制) & \textbf{$x^{i-1}$ 在 $GF(2^8)$ 中的值} \\
+\hline
+1 & 01 00 00 00 & $x^0 = 1$ \\
+2 & 02 00 00 00 & $x^1 = 2$ \\
+3 & 04 00 00 00 & $x^2 = 4$ \\
+4 & 08 00 00 00 & $x^3 = 8$ \\
+5 & 10 00 00 00 & $x^4 = 16$ \\
+6 & 20 00 00 00 & $x^5 = 32$ \\
+7 & 40 00 00 00 & $x^6 = 64$ \\
+8 & 80 00 00 00 & $x^7 = 128$ \\
+9 & 1B 00 00 00 & $x^8 = x^4 + x^3 + x + 1$ \\
+10 & 36 00 00 00 & $x^9 = x^5 + x^4 + x^2 + x$ \\
+\hline
+\end{tabular}
+\end{center}
+\end{tcolorbox}
+
+注：Rcon 的计算采用 $x^{i-1}$ 模不可约多项式 $m(x) = x^8 + x^4 + x^3 + x + 1$。
+
+\subsection{5.3 128 位密钥扩展示例}
+
+假设初始密钥为（十六进制）：
+$$
+\text{Key} = \text{2B 7E 15 16 28 AE D2 A6 AB F7 15 88 09 CF 4F 3C}
+$$
+
+则前 4 个字即为初始密钥本身：$w[0]$ 到 $w[3]$。
+
+计算 $w[4]$：
+\begin{enumerate}
+    \item $i = 4$, $i \mod N_k = 0$，使用第一种公式
+    \item $\text{RotWord}(w[3]) = \text{RotWord}(09\text{ CF } 4\text{F } 3\text{C}) = \text{CF } 4\text{F } 3\text{C } 09$
+    \item $\text{SubWord}(\text{CF } 4\text{F } 3\text{C } 09)$ 通过 S 盒替换得 $\text{8A } \text{AE } \text{6D } \text{2B}$
+    \item $\text{Rcon}[1] = 01\text{ }00\text{ }00\text{ }00$
+    \item $w[4] = w[0] \oplus \text{SubWord}(\text{RotWord}(w[3])) \oplus \text{Rcon}[1]$
+    \item $w[4] = \text{2B 7E 15 16} \oplus \text{8A AE 6D 2B} \oplus \text{01 00 00 00} = \text{A0 FA FE 17}$
+\end{enumerate}
+
+依此类推，可生成所有 11 个轮密钥（对应 10 轮加密）。
+
+\subsection{5.4 密钥扩展的设计考量}
+
+\begin{enumerate}
+    \item \textbf{密钥雪崩效应：} 初始密钥的 1 bit 变化会导致后续所有轮密钥发生不可预测的改变。
+    \item \textbf{抵抗已知攻击：} Rcon 的引入确保了不同轮次的轮密钥之间不存在简单的线性关系。
+    \item \textbf{实现效率：} 扩展算法仅使用基本的异或和 S 盒查表操作，便于硬件和软件实现。
+    \item \textbf{内存优化：} 对于 128 位密钥，可在运行时仅保存前 4 字和上一字，边扩展边使用。
+\end{enumerate}
+
+\subsection{5.5 三种密钥长度的对比}
+
+\begin{tcolorbox}[notebox=参数对比]
+\begin{center}
+\begin{tabular}{c|c|c|c}
+\hline
+\textbf{密钥长度} & \textbf{密钥字数 $N_k$} & \textbf{轮数 $N_r$} & \textbf{轮密钥字数} \\
+\hline
+128 位 & 4 & 10 & 44 字 (176 字节) \\
+192 位 & 6 & 12 & 52 字 (208 字节) \\
+256 位 & 8 & 14 & 60 字 (240 字节) \\
+\hline
+\end{tabular}
+\end{center}
+\end{tcolorbox}
+
+对于 192 位和 256 位密钥，密钥扩展算法在每 $N_k$ 和 $2N_k$ 字处额外使用 SubWord 变换，进一步增强安全性。
+
+\subsection{5.6 从轮密钥恢复主密钥}
+
+密钥扩展是一个单向函数，但从某一轮的轮密钥可以逆向推导主密钥（主密钥）。这在密钥管理中有重要应用，例如从内存中提取轮密钥后恢复原始密钥。
+
+\begin{tcolorbox}[notebox=核心思想]
+由于密钥扩展算法是确定性的且可逆，我们可以通过\textbf{逆扩展}操作，从任意一轮的轮密钥向前或向后推导其他轮的轮密钥，最终恢复主密钥。
+\end{tcolorbox}
+
+对于 128 位密钥（10 轮），轮密钥存储结构如下：
+$$
+\underbrace{w[0], w[1], w[2], w[3]}_{\text{主密钥}} \to 
+\underbrace{w[4], \dots, w[7]}_{\text{Round 1}} \to 
+\underbrace{w[8], \dots, w[11]}_{\text{Round 2}} \to \dots \to
+\underbrace{w[40], \dots, w[43]}_{\text{Round 10}}
+$$
+
+\textbf{5.6.1 逆扩展算法}
+
+已知第 $r$ 轮的轮密钥（由 4 个字组成），可以推导出第 $r-1$ 轮的轮密钥：
+
+\begin{tcolorbox}[mathbox]
+\textbf{逆扩展核心公式（128 位密钥）：}
+$$
+\begin{aligned}
+w[4r] &= w[4r+4] \oplus \text{SubWord}(\text{RotWord}(w[4r+3])) \oplus \text{Rcon}[r] \\
+w[4r+1] &= w[4r+5] \oplus w[4r] \\
+w[4r+2] &= w[4r+6] \oplus w[4r+1] \\
+w[4r+3] &= w[4r+7] \oplus w[4r+2]
+\end{aligned}
+$$
+\end{tcolorbox}
+
+其中 $r$ 是轮数（$1 \leqslant r \leqslant 10$），$w[4r]$ 到 $w[4r+3]$ 表示第 $r$ 轮的轮密钥。
+
+\textbf{5.6.2 具体示例}
+
+假设已知第 10 轮（最后一轮）的轮密钥：
+$$
+\text{Round}_{10} = [w[40], w[41], w[42], w[43]]
+$$
+
+恢复第 9 轮轮密钥：
+\begin{enumerate}
+    \item $w[36] = w[40] \oplus \text{SubWord}(\text{RotWord}(w[39])) \oplus \text{Rcon}[10]$
+    \item $w[37] = w[41] \oplus w[36]$
+    \item $w[38] = w[42] \oplus w[37]$
+    \item $w[39] = w[43] \oplus w[38]$
+\end{enumerate}
+
+依此类推，直到恢复出主密钥 $w[0]$ 到 $w[3]$。
+
+\textbf{5.6.3 密钥恢复的数学原理}
+
+\begin{itemize}
+    \item \textbf{异或的可逆性：} 由于 $a \oplus b = c \Rightarrow a = c \oplus b$，异或运算是其自身的逆运算。
+    \item \textbf{SubWord 的可逆性：} S 盒变换是双射（一一对应），存在逆 S 盒（Inverse S-box），可通过查表恢复。
+    \item \textbf{RotWord 的可逆性：} 循环左移 1 字节的逆操作是循环右移 1 字节。
+    \item \textbf{Rcon 的确定性：} 轮常数是公开已知的，不增加恢复难度。
+\end{itemize}
+
+\textbf{5.6.4 安全性 Implications}
+
+\begin{tcolorbox}[notebox=安全警示]
+这一特性意味着：\textbf{如果攻击者获取了任意一轮的完整轮密钥，理论上可以恢复出主密钥。} 这对密钥存储和内存安全有重要启示：
+\end{tcolorbox}
+
+\begin{enumerate}
+    \item \textbf{内存攻击风险：} 侧信道攻击、cold boot 攻击等若能提取轮密钥，等同于泄露主密钥。
+    \item \textbf{密钥派生函数 (KDF)：} 在实际应用中，应使用 KDF（如 PBKDF2、Scrypt、Argon2）从主密钥派生轮密钥，避免直接使用主密钥进行扩展。
+    \item \textbf{白盒密码：} 白盒实现中需对密钥扩展过程进行混淆或使用专用白盒算法，防止密钥恢复。
+    \item \textbf{最佳实践：} 敏感场景下，应避免在内存中存储完整的主密钥，仅在需要时临时派生。
+\end{enumerate}
+
+\textbf{5.6.5 扩展到 192 位和 256 位密钥}
+
+对于更长密钥，逆扩展算法略有不同：
+
+\begin{itemize}
+    \item \textbf{192 位密钥 (12 轮)：} 每 6 个字为一组，逆扩展时需考虑 $2N_k$ 位置的额外 SubWord 变换。
+    \item \textbf{256 位密钥 (14 轮)：} 每 8 个字为一组，每 $N_k$ 和 $2N_k$ 位置都需要 SubWord 变换。
+\end{itemize}
+
+\begin{tcolorbox}[notebox=统一规律]
+\textbf{核心原则：} 逆扩展与正扩展是\textbf{对称}的过程。已知第 $r$ 轮的轮密钥，通过反向迭代（从后往前），每次逆推 $N_k$ 个字，直到恢复主密钥。
+\end{tcolorbox}
+
 \section{\color{aesblue}附加专题：列混合 (MixColumns) 的设计逻辑}
 
 \begin{tcolorbox}[notebox=核心意义]
@@ -253,6 +442,169 @@ $$
     \item \textbf{代价：} 导致 AES 解密通常比加密稍慢。
     \item \textbf{权衡：} 这种设计将计算压力推向了解密端，而在许多应用场景（如文件加密、流媒体推流）中，加密的性能瓶颈通常比解密更敏感。
 \end{itemize}
+\section{\color{aesblue}附加专题：AES 解密算法设计}
+
+AES 解密算法是加密算法的逆过程，通过逆向操作恢复明文。解密过程中使用的轮函数是加密轮函数的逆变换。
+
+\subsection{1. 解密流程概述}
+
+AES 解密（以 128 位密钥为例）包含 10 轮变换：
+
+\begin{tcolorbox}[notebox=解密流程]
+\textbf{初始轮：} AddRoundKey（使用第 10 轮轮密钥）\\
+\textbf{主循环（9 轮）：} InvShiftRows $\rightarrow$ InvSubBytes $\rightarrow$ AddRoundKey $\rightarrow$ InvMixColumns\\
+\textbf{最后一轮：} InvShiftRows $\rightarrow$ InvSubBytes $\rightarrow$ AddRoundKey
+\end{tcolorbox}
+
+与加密不同，解密的第一轮和最后一轮的轮函数结构与中间轮相同（均包含 InvMixColumns）。
+
+\subsection{2. 逆轮函数组件}
+
+\textbf{2.1 逆字节代换 (InvSubBytes)}
+
+InvSubBytes 是 SubBytes 的逆操作，通过逆 S 盒（Inverse S-box）进行字节替换。
+
+\begin{tcolorbox}[notebox=逆 S 盒构造]
+逆 S 盒的构造过程是加密 S 盒的逆操作：
+\begin{enumerate}
+    \item 首先进行逆仿射变换（异或 \texttt{0x63}）
+    \item 然后在 $GF(2^8)$ 上求乘法逆元
+\end{enumerate}
+逆 S 盒的特点：$S^{-1}(S(x)) = x$，即两次变换恢复原值。
+\end{tcolorbox}
+
+\textbf{2.2 逆行移位 (InvShiftRows)}
+
+InvShiftRows 是 ShiftRows 的逆操作，进行循环右移：
+
+\begin{itemize}
+    \item 第 0 行：不移动
+    \item 第 1 行：循环右移 1 个字节
+    \item 第 2 行：循环右移 2 个字节（对于 4×4 矩阵，等价于左移 2 个字节）
+    \item 第 3 行：循环右移 3 个字节
+\end{itemize}
+
+\textbf{2.3 逆列混淆 (InvMixColumns)}
+
+InvMixColumns 是 MixColumns 的逆操作，使用逆矩阵进行变换：
+
+\begin{tcolorbox}[mathbox]
+$$
+\begin{bmatrix}
+s'_{0,c} \\ s'_{1,c} \\ s'_{2,c} \\ s'_{3,c}
+\end{bmatrix}
+=
+\begin{bmatrix}
+0E & 0B & 0D & 09 \\
+09 & 0E & 0B & 0D \\
+0D & 09 & 0E & 0B \\
+0B & 0D & 09 & 0E
+\end{bmatrix}
+\begin{bmatrix}
+s_{0,c} \\ s_{1,c} \\ s_{2,c} \\ s_{3,c}
+\end{bmatrix}
+$$
+\end{tcolorbox}
+
+其中系数 \texttt{0E, 0B, 0D, 09} 在 $GF(2^8)$ 中定义：
+\begin{itemize}
+    \item \texttt{0E} = $x^4 + x^3 + x^2 + x$
+    \item \texttt{0B} = $x^3 + x + 1$
+    \item \texttt{0D} = $x^4 + x^2 + x + 1$
+    \item \texttt{09} = $x^3 + 1$
+\end{itemize}
+
+\textbf{2.4 轮密钥加 (AddRoundKey)}
+
+AddRoundKey 是自逆的：$(S \oplus K) \oplus K = S$。因此解密时直接使用相同的轮密钥进行异或即可。
+
+\subsection{3. 密钥调度在解密中的应用}
+
+解密需要使用与加密相反顺序的轮密钥：
+
+\begin{tcolorbox}[notebox=轮密钥顺序]
+\begin{center}
+\begin{tabular}{c|c|c}
+\hline
+轮数 & 加密轮密钥 & 解密轮密钥 \\
+\hline
+初始 & $K_0$ & $K_{10}$ \\
+1 & $K_1$ & $K_9$ \\
+2 & $K_2$ & $K_8$ \\
+$\vdots$ & $\vdots$ & $\vdots$ \\
+9 & $K_9$ & $K_1$ \\
+10 & $K_{10}$ & $K_0$ \\
+\hline
+\end{tabular}
+\end{center}
+\end{tcolorbox}
+
+因此，解密时需要预先计算并存储逆序的轮密钥，或者在解密过程中实时逆扩展。
+
+\subsection{4. 解密与加密的对比}
+
+\begin{tcolorbox}[notebox=关键差异]
+\begin{center}
+\begin{tabular}{p{4cm}|p{5cm}|p{5cm}}
+\hline
+特性 & 加密 & 解密 \\
+\hline
+轮数 & 首轮无 InvMixColumns & 首轮无 InvMixColumns \\
+轮顺序 & SubBytes $\rightarrow$ ShiftRows $\rightarrow$ MixColumns $\rightarrow$ AddRoundKey & InvShiftRows $\rightarrow$ InvSubBytes $\rightarrow$ AddRoundKey $\rightarrow$ InvMixColumns \\
+轮密钥顺序 & $K_0, K_1, \dots, K_{N_r}$ & $K_{N_r}, K_{N_r-1}, \dots, K_0$ \\
+计算复杂度 & MixColumns 系数简单 (01,02,03) & InvMixColumns 系数复杂 (09,0B,0D,0E) \\
+执行速度 & 较快 & 较慢（约 20-30\%） \\
+\hline
+\end{tabular}
+\end{center}
+\end{tcolorbox}
+
+\subsection{5. 解密算法设计的安全性考量}
+
+\begin{enumerate}
+    \item \textbf{非对称的计算压力：} 加密端使用简单系数，解密端使用复杂系数。这是故意的设计选择，因为许多场景中加密需求远大于解密需求。
+    
+    \item \textbf{等密钥长度的变体 (Equivalent Inverse)：} 为了使解密与加密结构一致，可以使用「等密钥」技术：将 InvMixColumns 融合到轮密钥中，使解密轮函数形式上与加密相同。
+    
+    \item \textbf{侧信道攻击面：} 解密过程中InvMixColumns 的复杂运算可能泄露更多信息，需要注意实现中的侧信道防护。
+\end{enumerate}
+
+\textbf{5.1 等密钥 (Equivalent Inverse) 技术}
+
+等密钥技术允许解密使用与加密相同的轮函数结构，代价是轮密钥需要预处理：
+
+\begin{tcolorbox}[mathbox]
+\textbf{等密钥变换：}
+$$
+K'_r = \text{InvMixColumns}(K_r) \quad \text{（对于 } r = 1 \text{ 到 } N_r-1\text{）}
+$$
+$$
+K'_0 = K_0, \quad K'_{N_r} = K_{N_r}
+$$
+\end{tcolorbox}
+
+使用等密钥后，解密流程变为：
+$$
+\text{InvSubBytes} \rightarrow \text{InvShiftRows} \rightarrow \text{AddRoundKey} \rightarrow \text{InvMixColumns}
+$$
+这与加密的结构完全对称，便于实现和优化。
+
+\subsection{6. 解密正确性验证}
+
+解密正确性的数学基础：
+
+\begin{enumerate}
+    \item \textbf{仿射变换可逆：} $S^{-1}(S(x)) = x$（逆 S 盒与 S 盒互为逆函数）
+    \item \textbf{行移位可逆：} InvShiftRows(ShiftRows($S$)) = $S$
+    \item \textbf{列混淆可逆：} InvMixColumns(MixColumns($S$)) = $S$
+    \item \textbf{异或自逆：} $(x \oplus k) \oplus k = x$
+\end{enumerate}
+
+因此，完整解密过程：
+$$
+\text{Plaintext} = D_K(C) = D_K(E_K(\text{Plaintext})) = \text{Plaintext}
+$$
+
 \vspace{1cm}
 \begin{center}
     \color{gray} \hrule fill \\ \vspace{0.2cm}
