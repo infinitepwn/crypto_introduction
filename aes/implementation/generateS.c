@@ -9,7 +9,7 @@
 //        inv_{(i+6) mod 8} ⊕ inv_{(i+7) mod 8} ⊕ c_i
 // 其中c = 0x63
 // 注意：这里i从0到7，b0是最低位(LSB)
-static uint8_t affine_transform(uint8_t x) {
+uint8_t affine_transform(uint8_t x) {
     uint8_t result = 0;
     
     // AES仿射变换矩阵（从LSB到MSB）
