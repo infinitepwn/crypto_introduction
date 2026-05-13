@@ -1,0 +1,114 @@
+本实验的核心原理是 Padding Oracle 攻击。该攻击针对采用 CBC 工作模式并使用 PKCS\#7 填充的分组密码系统。当解密服务器会向攻击者反馈“填充是否合法”时，即使攻击者不知道 AES 密钥，也可以通过构造密文并反复查询服务器，逐字节恢复目标密文对应的明文。
+
+\subsection{CBC 模式解密关系}
+
+在 CBC 模式中，设初始向量为 $IV$，密文分组为 $C_1,C_2,\cdots,C_n$，对应明文分组为 $P_1,P_2,\cdots,P_n$。令 $C_0 = IV$，则第 $i$ 个密文分组的 CBC 解密关系为：
+
+\begin{equation}
+    P_i = D_K(C_i) \oplus C_{i-1}
+\end{equation}
+
+其中，$D_K(C_i)$ 表示在密钥 $K$ 下对密文分组 $C_i$ 进行 AES 解密得到的中间状态，$\oplus$ 表示按字节异或运算。
+
+为了便于描述，记：
+
+\begin{equation}
+    I_i = D_K(C_i)
+\end{equation}
+
+则有：
+
+\begin{equation}
+    P_i = I_i \oplus C_{i-1}
+\end{equation}
+
+因此，如果能够恢复出中间状态 $I_i$，再与真实的前一密文分组 $C_{i-1}$ 异或，就可以得到真实明文分组 $P_i$。
+
+\subsection{PKCS\#7 填充规则}
+
+AES 的分组长度为 16 字节，而明文长度不一定正好是 16 字节的整数倍，因此需要使用填充机制。PKCS\#7 填充规则规定：如果需要填充 $t$ 个字节，则每个填充字节的值都为 $t$。
+
+例如，当需要填充 1 个字节时，填充值为：
+
+\begin{equation}
+    01
+\end{equation}
+
+当需要填充 2 个字节时，填充值为：
+
+\begin{equation}
+    02\ 02
+\end{equation}
+
+当需要填充 6 个字节时，填充值为：
+
+\begin{equation}
+    06\ 06\ 06\ 06\ 06\ 06
+\end{equation}
+
+因此，解密服务器在解密后会检查最后若干字节是否符合 PKCS\#7 填充规则。如果填充合法，则返回正确信息；如果填充不合法，则返回错误信息。
+
+\subsection{Padding Oracle 的泄露点}
+
+在本实验中，攻击者可以访问解密服务器。服务器对输入密文进行 AES-128-CBC 解密后，会检查解密结果是否满足 PKCS\#7 填充规则：
+
+\begin{itemize}
+    \item 若填充正确，服务器返回 HTTP 200；
+    \item 若填充错误，服务器返回 HTTP 500 server error。
+\end{itemize}
+
+从表面上看，服务器没有直接返回明文或密钥。但它返回的填充状态本身已经泄露了关于解密结果的信息。攻击者可以不断构造不同的密文输入，根据服务器返回的 HTTP 状态码判断某种猜测是否正确。这种能够判断填充是否合法的服务器就称为 Padding Oracle。
+
+\subsection{利用填充反馈恢复中间状态}
+
+假设攻击目标是某个密文分组 $C_i$。攻击者构造一个伪造的前一分组 $R$，并向服务器提交：
+
+\begin{equation}
+    R \parallel C_i
+\end{equation}
+
+服务器解密最后一个分组后得到：
+
+\begin{equation}
+    D_K(C_i) \oplus R = I_i \oplus R
+\end{equation}
+
+由于 $R$ 是攻击者可以控制的，攻击者就可以通过修改 $R$ 的字节，使得 $I_i \oplus R$ 的最后若干字节变成合法的 PKCS\#7 填充。
+
+例如，为了恢复最后一个字节，攻击者枚举 $R$ 的最后一个字节 $R_{15}$，直到服务器返回 HTTP 200。此时说明：
+
+\begin{equation}
+    I_{i,15} \oplus R_{15} = 01
+\end{equation}
+
+于是可以得到：
+
+\begin{equation}
+    I_{i,15} = R_{15} \oplus 01
+\end{equation}
+
+恢复出最后一个中间状态字节后，攻击者继续构造伪造分组，使最后两个字节变成：
+
+\begin{equation}
+    02\ 02
+\end{equation}
+
+然后枚举倒数第二个字节，恢复 $I_{i,14}$。依次类推，可以从后向前逐字节恢复整个中间状态：
+
+\begin{equation}
+    I_i = D_K(C_i)
+\end{equation}
+
+最后，根据 CBC 解密关系：
+
+\begin{equation}
+    P_i = I_i \oplus C_{i-1}
+\end{equation}
+
+即可得到目标密文分组 $C_i$ 对应的真实明文分组。
+
+\subsection{攻击本质}
+
+Padding Oracle 攻击并不是直接破解 AES 算法本身，也不是恢复 AES 密钥，而是利用了解密系统实现中的信息泄露。具体来说，服务器把“填充正确”和“填充错误”以不同的状态返回给攻击者，使攻击者能够通过大量选择密文查询，逐步推断 CBC 解密的中间状态，最终恢复明文。
+
+因此，本实验说明：只提供机密性而缺少完整性保护的 CBC 加密实现是不安全的。在实际系统中，不能将可区分的 padding 错误直接暴露给外部用户，更安全的做法是使用认证加密模式，或者在解密前先进行消息认证。

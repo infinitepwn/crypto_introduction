@@ -1,0 +1,63 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage{longtable}
+\usepackage{pdflscape}
+
+% ===== 配置层 =====
+\input{config/packages}
+\input{config/format}
+\input{config/listing}
+
+
+%=== 配置封面 ===
+\renewcommand{\ReportName}{江李阳, 王健一,邱泽辉}       % 合作成员
+\renewcommand{\ReportID}{202400460042, 202400460037,202400460046}  % 学号
+\renewcommand{\ReportMajor}{密码科学与技术}% 专业            % 专业
+
+
+% ===== 标题 =====
+% \title{\textbf{\LARGE{密码学引论第一次实验}}}
+% \author{\textbf{江李阳202400460042，王健一202400460037，邱泽辉202400460046}}
+% \date{\today}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{fancy}
+\newpage
+\tableofcontents
+\newpage
+
+% ===== 内容层 =====
+\section{实验目的}
+\input{content/1-experiment_objective}
+
+\section{实验环境}
+\input{content/2-experiment_environment}
+
+\section{实验原理}
+\input{content/3-experiment_principle}
+
+\section{目标密文与分组}
+\input{content/4-target_ciphertext_and_blocks}
+
+\section{攻击算法设计}
+\input{content/5-attack_algorithm_design}
+
+\section{代码实现说明}
+\input{content/6-code_implementation}
+
+\section{运行结果与破解明文}
+\input{content/7-results_and_recovered_plaintext}
+
+\section{实验分析与总结}
+\input{content/8-analysis_and_conclusion}
+
+
+% ===== 附录 =====
+
+
+% ===== 参考文献 =====
+\bibliographystyle{plain}
+\bibliography{bib/ref}
+
+\end{document}

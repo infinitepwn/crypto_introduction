@@ -1,0 +1,31 @@
+本实验在本地编写攻击程序，并通过访问实验指导中给出的解密服务器完成 Padding Oracle 攻击。实验过程中，攻击者不需要知道 AES 密钥，只需要根据服务器返回的填充状态判断密文解密后的 PKCS\#7 填充是否合法。
+
+\begin{table}[H]
+    \centering
+    \caption{实验环境}
+    \begin{tabular}{|c|c|}
+        \hline
+        项目 & 配置或说明 \\
+        \hline
+        操作系统 & Windows 11 \\
+        \hline
+        编程语言 & Python 3 \\
+        \hline
+        开发工具 & Visual Studio Code \\
+        \hline
+        加密算法 & AES-128-CBC \\
+        \hline
+        填充标准 & PKCS\#7 \\
+        \hline
+        目标密文编号 & 5 号密文 \\
+        \hline
+        密钥组 & Key\_2 \\
+        \hline
+        解密接口 & \verb|http://10.102.33.67:8208/dec_2?data=| \\
+        \hline
+    \end{tabular}
+\end{table}
+
+其中，实验指导给出的解密服务器会对输入的密文进行 AES-128-CBC 解密，并检查解密后明文是否满足 PKCS\#7 填充规则。若填充正确，服务器返回 HTTP 200；若填充错误，服务器返回 HTTP 500 server error。因此，本实验程序通过构造不同的密文并观察服务器返回状态，逐步恢复目标密文对应的明文。
+
+由于本小组抽到的是 5 号密文，而实验材料中 5 号密文属于 Key\_2 加密得到的密文，因此程序中访问的解密接口为 \verb|dec_2|。实验运行时需要保证本机能够访问学校实验服务器，通常需要处于校园网环境或连接学校 VPN。
