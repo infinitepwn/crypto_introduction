@@ -1,23 +1,9 @@
-根据实验要求，目标密文序号由小组成员学号最后一位之和对 10 取模得到。本小组抽到的目标密文序号为 5。实验材料中给出的 5 号密文属于 Key\_2 加密所得密文，因此本实验在攻击过程中使用 \verb|dec_2| 解密接口进行 Padding Oracle 查询。
-
-\subsection{目标密文}
-
-实验材料中给出的 5 号目标密文为：
-
-\begin{lstlisting}[breaklines=true, basicstyle=\small\ttfamily]
-46307250616464316e674f7261636c339ae0735429869542efc40dcdc3f4c170649463f719c5ddf4ce8c6d1ef0e5d41ac5d137629e3fe1340cfaad7e21d65d14
-\end{lstlisting}
-
-该密文采用 AES-128-CBC 模式加密，并使用 PKCS\#7 填充。由于 AES 的分组长度为 16 字节，因此需要按照每 16 字节，即每 32 个十六进制字符，对密文进行分组。
+本实验选择的目标密文编号为 5，对应的解密接口为 \verb|dec_2|。目标密文采用 AES-128-CBC 模式加密，并使用 PKCS\#7 填充。由于 AES 的分组长度为 16 字节，因此需要按照每 16 字节，即每 32 个十六进制字符，对目标密文进行分组。
 
 \subsection{密文分组}
 
 目标密文的整体结构为：
-
-\begin{equation}
-    IV \parallel C_1 \parallel C_2 \parallel C_3
-\end{equation}
-
+\[IV \parallel C_1 \parallel C_2 \parallel C_3\]
 其中，$IV$ 为初始向量，$C_1,C_2,C_3$ 为三个密文分组。按照 16 字节分组后得到：
 
 \begin{table}[H]
@@ -38,21 +24,12 @@
     \end{tabular}
 \end{table}
 
-程序运行时首先对目标密文进行分组，输出结果如下：
-
-\begin{lstlisting}[breaklines=true, basicstyle=\small\ttfamily]
-IV = 46307250616464316e674f7261636c33
-C1 = 9ae0735429869542efc40dcdc3f4c170
-C2 = 649463f719c5ddf4ce8c6d1ef0e5d41a
-C3 = c5d137629e3fe1340cfaad7e21d65d14
-\end{lstlisting}
-
-在 CBC 解密过程中，$IV$ 可以视为第 0 个密文分组，即 $C_0 = IV$。因此三个明文分组的恢复关系分别为：
+在 CBC 解密过程中，$IV$ 可视为第 0 个密文分组，即 $C_0 = IV$。因此三个明文分组的恢复关系分别为：
 
 \begin{align}
-    P_1 &= D_K(C_1) \oplus IV, \\
-    P_2 &= D_K(C_2) \oplus C_1, \\
-    P_3 &= D_K(C_3) \oplus C_2.
+    P_1 &= Dec_k(C_1) \oplus IV, \\
+    P_2 &= Dec_k(C_2) \oplus C_1, \\
+    P_3 &= Dec_k(C_3) \oplus C_2.
 \end{align}
 
-后续攻击过程的目标就是分别恢复 $D_K(C_1)$、$D_K(C_2)$ 和 $D_K(C_3)$ 的中间状态，再与对应的前一分组异或，最终得到完整明文。
+后续攻击过程的目标就是分别恢复 $D_k(C_1)$、$D_k(C_2)$ 和 $D_k(C_3)$ 的中间状态，再与对应的前一分组异或，得到当前密文分组对应的明文，最终拼接出完整明文。由于 Padding Oracle 攻击总是针对“提交密文中的最后一个分组”进行判断，因此在实际查询时，需要构造密文使当前待恢复的目标块位于查询密文的末尾位置。
