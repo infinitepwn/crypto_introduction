@@ -16,6 +16,7 @@
 \fancyhead[L]{\textcolor{macblue}{\textbf{密码学引论}}} % 左侧显示实验报告
 \fancyhead[R]{\textbf{第三次实验实验报告}} % 右侧显示实验名称
 \fancyfoot[C]{\thepage}
+\setlength{\headheight}{25pt}
 \renewcommand{\headrulewidth}{0.8pt}
 \renewcommand{\headrule}{\hbox to\headwidth{\color{macblue}\leaders\hrule height \headrulewidth\hfill}}
 
@@ -41,10 +42,25 @@
 }
 
 %--- 代码设置---
+% \lstset{
+%     basicstyle = \ttfamily,
+%     keywordstyle = \color{blue},
+%     frame = single
+% }
+
 \lstset{
-    basicstyle = \ttfamily,
-    keywordstyle = \color{blue},
-    frame = single
+    language=Python,        % 指定语言为Python
+    basicstyle=\ttfamily\small, % 代码字体
+    keywordstyle=\color{blue},   % 关键字颜色
+    commentstyle=\color{green},% 注释颜色
+    stringstyle=\color{red},      % 字符串颜色
+    numbers=left,           % 显示行号
+    numberstyle=\tiny\color{gray},% 行号样式
+    frame=single,           % 代码边框
+    breaklines=true,        % 自动换行
+    breakatwhitespace=false,
+    columns=fullflexible,
+    keepspaces=true
 }
 
 \geometry{left=2.5cm, right=2.5cm, top=3cm, bottom=3cm}

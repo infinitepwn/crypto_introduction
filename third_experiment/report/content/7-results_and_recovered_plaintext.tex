@@ -1,97 +1,56 @@
-本节给出程序运行结果和最终破解得到的明文。程序首先对目标密文进行分组，并检测原始密文是否能够通过服务器的 PKCS\#7 填充检查。运行结果显示，原始密文 padding 正确，说明解密服务器可以正常访问，Padding Oracle 查询函数可用。
+本节给出程序运行结果以及最终恢复得到的明文。实验开始时，先将目标密文拆分为 $IV,C_1,C_2,C_3$ 四个分组，并验证原始密文能够通过服务器的 PKCS\#7 填充检查。服务器返回填充正确，说明 oracle 接口可正常使用，后续攻击可以继续进行。
 
-\subsection{Oracle 可用性测试}
+运行结果如下图:
+\begin{figure}[H]
+    \centering
+    \includegraphics[width = 1\textwidth]{figures/attack_1_result.png}
+    \caption{代码运行结果}
+\end{figure}
 
-程序运行后首先输出目标密文的分组结果：
+\subsection{分组恢复结果}
 
-\begin{lstlisting}[breaklines=true, basicstyle=\small\ttfamily]
-IV = 46307250616464316e674f7261636c33
-C1 = 9ae0735429869542efc40dcdc3f4c170
-C2 = 649463f719c5ddf4ce8c6d1ef0e5d41a
-C3 = c5d137629e3fe1340cfaad7e21d65d14
-\end{lstlisting}
+程序依次对三个目标密文分组进行恢复，最终得到的明文分组结果如表 \ref{tab:plaintext-blocks} 所示。
 
-随后程序向解密服务器提交原始密文进行测试，服务器返回填充正确：
+\begin{table}[H]
+    \centering
+    \caption{各明文分组恢复结果}
+    \label{tab:plaintext-blocks}
+    \begin{tabular}{|c|p{7.2cm}|p{4.0cm}|}
+        \hline
+        分组 & 明文十六进制表示 & ASCII 表示 \\
+        \hline
+        $P_1$ & \texttt{666c61677b353535 6d73646236617864} & \texttt{flag\{555msdb6axd} \\
+        \hline
+        $P_2$ & \texttt{3962683065716c76 683167666378326b} & \texttt{9bh0eqlvh1gfcx2k} \\
+        \hline
+        $P_3$ & \texttt{6379723177733636 367d060606060606} & \texttt{cyr1ws666\}} \\
+        \hline
+    \end{tabular}
+\end{table}
 
-\begin{lstlisting}[breaklines=true, basicstyle=\small\ttfamily]
-正在测试 oracle...
-原始密文 padding 正确，oracle 可用
-\end{lstlisting}
-
-这说明本实验所使用的解密接口能够正常工作，后续可以通过构造密文并观察服务器返回状态进行 Padding Oracle 攻击。
-
-\subsection{明文分组恢复结果}
-
-程序依次对 $C_1$、$C_2$ 和 $C_3$ 三个密文分组进行攻击。每个分组均从最后一个字节开始向前恢复，逐字节得到对应的中间状态和明文字节。
-
-第 1 个明文分组恢复结果如下：
-
-\begin{lstlisting}[breaklines=true, basicstyle=\small\ttfamily]
-第 1 个明文分组 hex：
-666c61677b3535356d73646236617864
-
-第 1 个明文分组 text：
-flag{555msdb6axd
-\end{lstlisting}
-
-第 2 个明文分组恢复结果如下：
-
-\begin{lstlisting}[breaklines=true, basicstyle=\small\ttfamily]
-第 2 个明文分组 hex：
-3962683065716c76683167666378326b
-
-第 2 个明文分组 text：
-9bh0eqlvh1gfcx2k
-\end{lstlisting}
-
-第 3 个明文分组恢复结果如下：
-
-\begin{lstlisting}[breaklines=true, basicstyle=\small\ttfamily]
-第 3 个明文分组 hex：
-6379723177733636367d060606060606
-
-第 3 个明文分组 text：
-cyr1ws666}
-\end{lstlisting}
-
-其中，第 3 个明文分组末尾的：
-
-\begin{equation}
-    06\ 06\ 06\ 06\ 06\ 06
-\end{equation}
-
-为 PKCS\#7 填充字节，表示最后填充了 6 个字节。因此，真实明文不包含这 6 个填充字节。
+从表中可以看到，第三个明文分组的末尾为 \texttt{06 06 06 06 06 06}。这说明原始明文在最后补入了 6 个 PKCS\#7 填充字节，因此这些字节不属于真实消息内容。
 
 \subsection{完整明文恢复结果}
 
-将三个明文分组拼接后，可以得到带有 PKCS\#7 填充的完整明文，其十六进制表示为：
-
-\begin{lstlisting}[breaklines=true, basicstyle=\small\ttfamily]
-666c61677b3535356d736462366178643962683065716c76683167666378326b6379723177733636367d060606060606
-\end{lstlisting}
-
-去除末尾 6 个字节的 PKCS\#7 填充后，得到真实明文的十六进制表示为：
-
-\begin{lstlisting}[breaklines=true, basicstyle=\small\ttfamily]
-666c61677b3535356d736462366178643962683065716c76683167666378326b6379723177733636367d
-\end{lstlisting}
-
-将其按 UTF-8 字符串解码，最终得到 5 号目标密文对应的明文为：
-
+将三个明文分组顺次拼接后，可以得到带填充的完整明文，其十六进制表示为
 \begin{center}
-    \fbox{
-        \texttt{flag\{555msdb6axd9bh0eqlvh1gfcx2kcyr1ws666\}}
-    }
+    \ttfamily\small
+    666c61677b3535356d73646236617864\\
+    3962683065716c76683167666378326b\\
+    6379723177733636367d060606060606
 \end{center}
 
-\subsection{运行过程截图说明}
+去除末尾 6 个字节的 PKCS\#7 填充后，真实明文的十六进制表示为
+\begin{center}
+    \ttfamily\small
+    666c61677b3535356d73646236617864\\
+    3962683065716c76683167666378326b\\
+    6379723177733636367d
+\end{center}
 
-为证明攻击过程确实通过逐字节恢复完成，实验报告中应加入程序运行截图。建议至少插入以下两类截图：
+将其按 UTF-8 字符串解码，最终恢复得到 5 号目标密文对应的明文为
+\begin{center}
+    \fbox{\texttt{flag\{555msdb6axd9bh0eqlvh1gfcx2kcyr1ws666\}}}
+\end{center}
 
-\begin{itemize}
-    \item 第一类：Oracle 可用性测试截图，显示目标密文分组以及“原始密文 padding 正确，oracle 可用”；
-    \item 第二类：攻击过程截图，显示程序逐字节输出 \verb|fake|、\verb|intermediate| 和 \verb|plain| 的恢复过程；
-    \item 第三类：最终结果截图，显示带 padding 的明文、去除 padding 后的明文以及最终明文。
-\end{itemize}
-
-
+这一结果与三个分组的逐块恢复结果是能够相互对应的，也说明程序恢复出的中间状态和最终明文是一致的。
