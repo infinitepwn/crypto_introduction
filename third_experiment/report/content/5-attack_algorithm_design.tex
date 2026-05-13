@@ -1,0 +1,182 @@
+本实验的攻击算法围绕 CBC 解密关系和 PKCS\#7 填充反馈展开。攻击者并不尝试恢复 AES 密钥，而是通过构造选择密文并反复访问解密服务器，逐字节恢复每个密文分组对应的中间状态，进而恢复明文。
+
+\subsection{整体攻击思路}
+
+设目标密文为：
+
+\begin{equation}
+    IV \parallel C_1 \parallel C_2 \parallel C_3
+\end{equation}
+
+对于任意一个目标密文分组 $C_i$，CBC 解密关系为：
+
+\begin{equation}
+    P_i = D_K(C_i) \oplus C_{i-1}
+\end{equation}
+
+令：
+
+\begin{equation}
+    I_i = D_K(C_i)
+\end{equation}
+
+则有：
+
+\begin{equation}
+    P_i = I_i \oplus C_{i-1}
+\end{equation}
+
+因此，攻击的关键是恢复中间状态 $I_i$。由于攻击者可以控制伪造的前一分组 $R$，服务器解密最后一个分组时得到：
+
+\begin{equation}
+    D_K(C_i) \oplus R = I_i \oplus R
+\end{equation}
+
+如果 $I_i \oplus R$ 的末尾字节满足 PKCS\#7 填充规则，服务器返回 HTTP 200；否则返回 HTTP 500。攻击者根据这个反馈逐字节恢复 $I_i$。
+
+\subsection{单个分组的攻击过程}
+
+攻击一个分组时，从最后一个字节开始向前恢复。设 AES 分组长度为 16 字节，字节下标为 $0,1,\cdots,15$。攻击过程如下：
+
+\begin{enumerate}
+    \item 构造一个 16 字节的伪造前置分组 $R$；
+    \item 从最后一个字节开始，令期望填充值为 $01$，枚举 $R_{15}$；
+    \item 将构造后的密文提交给解密服务器；
+    \item 若服务器返回 HTTP 200，则说明最后一个字节满足：
+    \begin{equation}
+        I_{i,15} \oplus R_{15} = 01
+    \end{equation}
+    因此可恢复：
+    \begin{equation}
+        I_{i,15} = R_{15} \oplus 01
+    \end{equation}
+    \item 恢复最后一个字节后，继续恢复倒数第二个字节。此时需要将最后两个字节都构造成 $02\ 02$；
+    \item 依次类推，当恢复第 $j$ 个字节时，令已经恢复出的后缀字节全部满足当前填充值 $pad$；
+    \item 重复上述过程，直到恢复完整的 16 字节中间状态 $I_i$；
+    \item 最后计算：
+    \begin{equation}
+        P_i = I_i \oplus C_{i-1}
+    \end{equation}
+    得到真实明文分组。
+\end{enumerate}
+
+\subsection{伪造分组的构造方法}
+
+假设当前要构造的填充值为 $pad$，正在恢复的位置为 $pos = 16 - pad$。对于已经恢复出来的后缀位置 $j > pos$，为了让解密结果的后缀字节均等于 $pad$，需要设置：
+
+\begin{equation}
+    R_j = I_{i,j} \oplus pad
+\end{equation}
+
+对于当前待恢复的位置 $pos$，程序枚举 $R_{pos}$ 的所有 256 种可能取值。当服务器返回填充合法时，有：
+
+\begin{equation}
+    I_{i,pos} \oplus R_{pos} = pad
+\end{equation}
+
+因此：
+
+\begin{equation}
+    I_{i,pos} = R_{pos} \oplus pad
+\end{equation}
+
+恢复出 $I_{i,pos}$ 后，再与真实的前一密文分组字节异或，即可得到对应的明文字节：
+
+\begin{equation}
+    P_{i,pos} = I_{i,pos} \oplus C_{i-1,pos}
+\end{equation}
+
+\subsection{实际提交密文格式}
+
+理论上，攻击某个目标分组 $C_i$ 时，可以向服务器提交：
+
+\begin{equation}
+    R \parallel C_i
+\end{equation}
+
+其中 $R$ 是攻击者构造的伪造前一分组。
+
+但是在本实验环境中，服务器接口接收的是完整的 \verb|IV+密文| 格式。因此在具体实现中，为了保证提交格式符合服务器要求，程序实际提交：
+
+\begin{equation}
+    IV \parallel R \parallel C_i
+\end{equation}
+
+此时，$C_i$ 仍然是最后一个密文分组，服务器检查的最后一个明文分组为：
+
+\begin{equation}
+    D_K(C_i) \oplus R
+\end{equation}
+
+这仍然满足 Padding Oracle 攻击的条件。恢复得到的中间状态仍然是 $I_i = D_K(C_i)$。随后程序再使用真实的前一密文分组 $C_{i-1}$ 计算真正明文：
+
+\begin{equation}
+    P_i = I_i \oplus C_{i-1}
+\end{equation}
+
+因此，对于三个密文分组，本实验分别进行如下计算：
+
+\begin{align}
+    P_1 &= D_K(C_1) \oplus IV, \\
+    P_2 &= D_K(C_2) \oplus C_1, \\
+    P_3 &= D_K(C_3) \oplus C_2.
+\end{align}
+
+\subsection{算法伪代码}
+
+本实验攻击算法可以概括为如下伪代码：
+
+\begin{lstlisting}[language=Python, caption={Padding Oracle 攻击算法伪代码}, basicstyle=\small\ttfamily, breaklines=true]
+for each target block C_i:
+    intermediate = [0] * 16
+    plaintext = [0] * 16
+
+    for pad from 1 to 16:
+        pos = 16 - pad
+        fake_prev = [0] * 16
+
+        for each recovered suffix byte j > pos:
+            fake_prev[j] = intermediate[j] xor pad
+
+        for guess from 0 to 255:
+            fake_prev[pos] = guess
+            test_cipher = IV || fake_prev || C_i
+
+            if oracle(test_cipher) == valid:
+                intermediate[pos] = guess xor pad
+                plaintext[pos] = intermediate[pos] xor real_prev_block[pos]
+                break
+
+    output plaintext
+\end{lstlisting}
+
+其中，\verb|oracle(test_cipher)| 表示向解密服务器提交构造密文，并根据服务器返回的 HTTP 状态码判断 PKCS\#7 填充是否合法。若服务器返回 HTTP 200，则认为填充合法；若返回 HTTP 500，则认为填充非法。
+
+\subsection{算法复杂度分析}
+
+对于每个字节，攻击者最多枚举 256 种可能取值。每个 AES 分组有 16 个字节，因此攻击一个分组最多需要：
+
+\begin{equation}
+    16 \times 256 = 4096
+\end{equation}
+
+次 oracle 查询。
+
+本实验目标密文除 IV 外共有 3 个密文分组，因此最多需要：
+
+\begin{equation}
+    3 \times 16 \times 256 = 12288
+\end{equation}
+
+次 oracle 查询。实际运行时，平均每个字节通常不需要枚举满 256 次，因此实际查询次数一般小于该上界。
+
+\subsection{算法特点}
+
+该攻击算法具有以下特点：
+
+\begin{itemize}
+    \item 不需要知道 AES 密钥，只依赖服务器返回的填充状态；
+    \item 不直接攻击 AES 算法本身，而是利用 CBC 模式和错误反馈之间的组合漏洞；
+    \item 逐字节恢复中间状态，再通过异或运算得到明文；
+    \item 攻击过程属于选择密文攻击，攻击者需要能够向解密服务器提交构造密文并观察反馈。
+\end{itemize}
