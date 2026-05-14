@@ -1,0 +1,696 @@
+\documentclass[12pt,a4paper]{article}
+
+% --- 核心宏包 ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{ctex} 
+\usepackage{seqsplit}
+\usepackage{amsmath, amsfonts, amssymb}
+\usepackage{geometry}
+\usepackage{listings}
+\usepackage{longtable}
+\usepackage{float}
+\usepackage{url}
+\usepackage{listings}
+\geometry{left=2.5cm, right=2.5cm, top=3cm, bottom=3cm}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+
+% --- 视觉与排版优化宏包 ---
+\usepackage[table]{xcolor} % 颜色支持，带有表格填色功能
+\usepackage{booktabs}      % 三线表美化
+\usepackage{fancyhdr}      % 自定义页眉页脚
+\usepackage[many]{tcolorbox} % 强大的带框/背景盒工具
+\usepackage{enumitem}      % 列表间距调整
+\usepackage{hyperref}      % 交叉引用与超链接
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta} % 必须有 positioning
+\definecolor{macblue}{RGB}{0, 122, 255}    % 强调蓝
+\definecolor{bglight}{RGB}{245, 245, 247}  % 极简浅灰背景
+\definecolor{darkgray}{RGB}{51, 51, 51}
+\definecolor{warningred}{RGB}{255, 59, 48} % 增加红色用于攻击/警告的强调
+% --- 超链接设置 ---
+\hypersetup{
+    colorlinks=true,
+    linkcolor=macblue,
+    urlcolor=macblue
+}
+
+% --- 页眉页脚设置 ---
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\textcolor{macblue}{\textbf{Homework}}} % 左侧显示实验报告
+\fancyhead[R]{\textbf{ElGamal与离散对数}} % 右侧显示实验名称
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.8pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{macblue}\leaders\hrule height \headrulewidth\hfill}}
+
+% --- 自定义高亮公式框 ---
+\newtcolorbox{coreconcept}[1][]{
+    colback=bglight,
+    colframe=macblue,
+    fonttitle=\bfseries\sffamily,
+    title=#1,
+    arc=3mm,
+    boxrule=1.2pt,
+    shadow={2mm}{-1.5mm}{0mm}{black!15},
+    left=10pt, right=10pt, top=5pt, bottom=5pt
+}
+\newtcolorbox{warningbox}[1][]{
+    colback=warningred!5,
+    colframe=warningred,
+    fonttitle=\bfseries\sffamily,
+    title=#1,
+    arc=3mm,
+    boxrule=1.2pt,
+    left=10pt, right=10pt, top=5pt, bottom=5pt
+}
+\usepackage{xcolor}
+
+\lstdefinestyle{mypython}{
+    language=Python,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    stringstyle=\color{red!70!black},
+    commentstyle=\color{green!50!black},
+    numbers=left,
+    numberstyle=\tiny,
+    breaklines=true,
+    frame=single,
+    tabsize=4,
+    showstringspaces=false
+}
+\lstdefinestyle{numstyle}{
+  basicstyle=\ttfamily\scriptsize,
+  breaklines=true,
+  breakatwhitespace=false,
+  columns=flexible,
+  keepspaces=true,
+  frame=single,
+  literate={0}{{0}}1 {1}{{1}}1 {2}{{2}}1 {3}{{3}}1 {4}{{4}}1
+           {5}{{5}}1 {6}{{6}}1 {7}{{7}}1 {8}{{8}}1 {9}{{9}}1
+}
+\lstdefinestyle{mycpp}{
+    language=C++,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    stringstyle=\color{red!70!black},
+    commentstyle=\color{green!50!black},
+    numbers=left,
+    numberstyle=\tiny,
+    breaklines=true,
+    breakatwhitespace=false,
+    columns=fullflexible,
+    frame=single
+}
+\usepackage{listings}
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  breakatwhitespace=false,
+  columns=fullflexible,
+  keepspaces=true,
+  frame=single
+}
+% --- 标题区域 ---
+\title{
+\textbf{\LARGE{ElGamal与离散对数}}\\[0.5em]
+}
+\author{\textbf{202400460046邱泽辉}}
+\date{\today}
+
+\begin{document}
+\maketitle
+1.（30分）
+
+\textbf{练习 9.14} 设 $p = 163$，考虑有限域 $\mathbb{Z}_p = \{0,1,2,\cdots,p-1\}$ 上的椭圆曲线：
+\[
+E: y^2 \equiv x^3 + 2 \pmod{p}
+\]
+
+今固定 $E$ 上一点 $P = (2,70)$。
+
+验证 $(78,86)$ 在曲线上并找出正整数 $x$ 使
+\[
+xP = (78,86)
+\]
+
+计算标量乘 $100P$。
+
+解:
+首先验证点 $(78,86)$ 是否在曲线上 $E$ 上：
+这一部分是可以手算的，可以拆因子简化计算
+\[
+78^3+2 = 6^3 \times 13^3 + 2 \equiv 216 \times 169 \times 13 + 2 \equiv 53 \times 6 \times 13 + 2 \equiv 61 \pmod{163}
+\]
+\[
+86^2 \equiv 4 \times 43 \times 43 \equiv 172 \times 43 \equiv 9 \times 43 \equiv 61 \pmod{163}
+\]
+所以 $(78,86)$ 在曲线上。
+
+接下来使用椭圆曲线的加法规则来计算 $xP$，其中 $P=(2,70)$。
+
+首先计算 $2P$：
+\[
+\lambda = \frac{3 \cdot 2^2}{2 \cdot 70} \equiv \frac{3}{35} \equiv 3 \cdot 35^{-1} = 42 \pmod{163}
+\]
+这里$35^{-1} \pmod{163}$，使用扩展欧几里得算法
+
+然后计算
+\[
+x = \lambda^2 - 2 \cdot 2 \equiv 42^2 - 4 \equiv 1764 - 4 \equiv 130 \pmod{163}
+\]
+\[
+y = \lambda (2 - 130) - 70 \equiv 42 \cdot (-128) - 70 \equiv 96 \pmod{163}
+\]
+所以 $2P = (130, 96)$
+
+这个手算是可以算的，就是比较费时
+
+接下来计算 $3P$：
+\[
+\lambda = \frac{96 - 70}{130 - 2} \equiv \frac{13}{64} \equiv 13 \cdot 64^{-1} \equiv 13 \cdot (-28) \equiv 125 \pmod{163}
+\]
+\[
+x = \lambda^2 - 130 - 2 \equiv 125^2 - 132 \equiv 38^2 -132 \equiv 4\times 19^2 -132 \equiv 8 \pmod{163}
+\]
+\[
+y = \lambda (130 - 8) - 96 \equiv 125 \times 122 - 96 \equiv 38\times 41 - 96 \equiv 158 \pmod{163}
+\]
+所以 $3P = (8, 158)$
+
+继续计算 $4P=2P+2P$：
+\[
+\lambda = \frac{3 \times 130^2}{2 \times 96} \equiv \frac{65^2}{16} \equiv 65^2 \times 51  \equiv 152 \pmod{163}
+\]
+\[
+x = \lambda^2 - 2 \cdot 130 \equiv 152^2 - 260 \equiv 11^2 - 260 \equiv 24 \pmod{163}
+\]
+\[
+y = \lambda (130 - 24) - 96 \equiv 152 \times 106 - 96 \equiv 11 \times 57 - 96 \equiv 42 \pmod{163}
+\]
+所以 $4P = (24, 42)$
+
+继续计算 $5P=4P+P$：
+\[
+\lambda = \frac{42 - 70}{24 - 2} \equiv \frac{-14}{11} \equiv -14 \times (-74)  = 58 \pmod{163}
+\]
+\[
+x = \lambda^2 - 24 - 2 \equiv 58^2 - 26 \equiv 78 \pmod{163}
+\]
+\[y = \lambda (24 - 78) - 42 \equiv 58 \times (-54) - 42 \equiv 86 \pmod{163}\]
+所以 $5P = (78, 86)$
+因此 $x=5$ 满足 $xP = (78, 86)$
+
+接下来计算 $100P$，可以用平方乘算法来计算，首先将 $100$ 转换为二进制：
+\[100_{10} = 1100100_2\]
+因此
+\[
+100P = 2(2(2(2(2(2P+P)))+P))
+\]
+这里直接用sagemath计算，得到 $100P = (12,153)$
+
+2.（40分）
+
+\textbf{练习 1.16} 设 $\mathbb{Z}_{13}$ 上的方程如下所示
+\begin{align}
+y^2 &= x^3 + 6 \mod 13 \tag{1.17} \\
+y^2 &= x^3 + 2x + 8 \mod 13 \tag{1.18} \\
+y^2 &= x^3 + 2x \mod 13 \tag{1.19}
+\end{align}
+
+（1）判断以上方程是否为 $\mathbb{Z}_{13}$ 上的椭圆曲线方程。
+
+（2）求出上述方程在 $\mathbb{Z}_{13}$ 上所有的解。
+
+（3）回顾本章例题 1.7 中 $\mathbb{Z}_{13}$ 上的椭圆曲线方程
+\[
+E:\; y^2 = x^3 + 7x + 6 \mod 13
+\]
+
+其对应的群 $E(\mathbb{Z}_{13})$ 是含有 11 个元素的循环群，具体元素如下：
+\[
+\{O,(1,1),(1,12),(5,6),(5,7),(6,2),(6,11),(10,6),(10,7),(11,6),(11,7)\}
+\]
+
+请基于上述群 $E(\mathbb{Z}_{13})$，给出椭圆曲线 ElGamal 公钥加密的实例。
+
+（4）在实现椭圆曲线密码方案时，需要注意检查点是否属于指定的椭圆曲线群，即点是否满足椭圆曲线方程或点的阶是否与指定的阶一致。例如，点 $Q=(5,0)$ 显然不是第（3）问所述椭圆曲线上的点。假设用户未对该点作相关检查，而直接采用椭圆曲线点加运算细则计算 $kQ$，请分析 $kQ$ 的计算结果。
+
+解：
+
+（1）首先判断方程是否为椭圆曲线方程，需要计算判别式 $\Delta$，对于方程 $y^2 = x^3 + ax + b$，判别式 $\Delta = -16(4a^3 + 27b^2)$。
+
+对于方程 (1.17)，$a=0$，$b=6$，所以 $\Delta = -16(4 \cdot 0^3 + 27 \cdot 6^2) = 4 \pmod{13}$，因此 (1.17) 是椭圆曲线方程。
+
+对于方程 (1.18)，$a=2$，$b=8$，所以 $\Delta = -16(4 \cdot 2^3 + 27 \cdot 8^2) = 2 \pmod{13}$，因此 (1.18) 是椭圆曲线方程。
+
+对于方程 (1.19)，$a=2$，$b=0$，所以 $\Delta = -16(4 \cdot 2^3 + 27 \cdot 0^2) = 5 \pmod{13}$，因此 (1.19) 是椭圆曲线方程。
+
+（2）接下来求出上述方程在 $\mathbb{Z}_{13}$ 上所有的解。对于每个 $x \in \mathbb{Z}_{13}$,判定 $y^2$ 是否为二次剩余。
+考虑\(Z_{13}\)上的二次剩余
+\[
+1^2 \equiv 1, \quad 2^2 \equiv 4, \quad 3^2 \equiv 9, \quad 4^2 \equiv 3, \quad 5^2 \equiv 12, \quad 6^2 \equiv 10
+\]
+也就是二次剩余集合为$\{0,1,3,4,9,10,12\}$
+对于方程（1.17）,代入$x$的值，得到表格如下：
+\begin{center}
+\begin{tabular}{c|c|c}
+$x$ & $x^3 + 6 \mod 13$ & $y^2$ 是否为二次剩余 \\
+\hline
+0 & 6 & 否 \\
+1 & 7 & 否 \\
+2 & 14 $\equiv$ 1 & 是, $y = 1, 12$ \\
+3 & 33 $\equiv$ 7 & 否 \\
+4 & 70 $\equiv$ 5 & 否 \\
+5 & 131 $\equiv$ 1 & 是, $y = 1, 12$ \\
+6 & 222 $\equiv$ 1 & 是, $y = 1, 12$ \\
+7 & 349 $\equiv$ 11 & 否 \\
+8 & 518 $\equiv$ 11 & 否 \\
+9 & 735 $\equiv$ 7 & 否 \\
+10 & 1006 $\equiv$ 5 & 否 \\
+11 & 1337 $\equiv$ 11 & 否 \\
+12 & 1734 $\equiv$ 5 & 否 \\
+\end{tabular}
+\end{center}
+因此方程（1.17）的解为$(2,1),(2,12),(5,1),(5,12),(6,1),(6,12)$
+对于方程（1.18）,代入$x$的值，得到表格如下：
+
+\begin{center}
+\begin{tabular}{c|c|c}
+$x$ & $x^3 + 2x + 8 \pmod{13}$ & 是否为二次剩余 \\
+\hline
+0 & 8 & 否 \\
+1 & 11 & 否 \\
+2 & 20 $\equiv$ 7 & 否 \\
+3 & 41 $\equiv$ 2 & 否 \\
+4 & 80 $\equiv$ 2 & 否 \\
+5 & 143 $\equiv$ 0 & 是, $y = 0$ \\
+6 & 236 $\equiv$ 2 & 否 \\
+7 & 365 $\equiv$ 1 & 是, $y = 1, 12$ \\
+8 & 536 $\equiv$ 3 & 是, $y = 4, 9$ \\
+9 & 755 $\equiv$ 1 & 是, $y = 1, 12$ \\
+10 & 1028 $\equiv$ 1 & 是, $y = 1, 12$ \\
+11 & 1361 $\equiv$ 9 & 是, $y = 3, 10$ \\
+12 & 1760 $\equiv$ 5 & 否 \\
+\end{tabular}
+\end{center}
+
+因此方程（1.18）的解为：
+
+\[
+(5,0),(7,1),(7,12),(8,4),(8,9),(9,1),(9,12),(10,1),(10,12),(11,3),(11,10)
+\]
+
+对于方程（1.19）,代入$x$的值，得到表格如下：
+
+\begin{center}
+\begin{tabular}{c|c|c}
+$x$ & $x^3 + 2x \pmod{13}$ & 是否为二次剩余 \\
+\hline
+0 & 0 & 是, $y = 0$ \\
+1 & 3 & 是, $y = 4, 9$ \\
+2 & 12 & 是, $y = 5, 8$ \\
+3 & 33 $\equiv$ 7 & 否 \\
+4 & 72 $\equiv$ 7 & 否 \\
+5 & 135 $\equiv$ 5 & 否 \\
+6 & 228 $\equiv$ 7 & 否 \\
+7 & 357 $\equiv$ 6 & 否 \\
+8 & 528 $\equiv$ 8 & 否 \\
+9 & 747 $\equiv$ 6 & 否 \\
+10 & 1020 $\equiv$ 6 & 否 \\
+11 & 1353 $\equiv$ 1 & 是, $y = 1, 12$ \\
+12 & 1752 $\equiv$ 10 & 是, $y = 6, 7$ \\
+\end{tabular}
+\end{center}
+
+因此方程（1.19）的解为：
+
+\[
+(0,0),(1,4),(1,9),(2,5),(2,8),(11,1),(11,12),(12,6),(12,7)
+\]
+（3）基于上述群 $E(\mathbb{Z}_{13})$，
+选取基点
+\[
+G=(1,1)
+\]
+由于群 $E(\mathbb{Z}_{13})$ 的阶为 $11$，所以非零元素均可作为生成元。
+
+接收方 Bob 选择私钥
+\[
+d=3
+\]
+则公钥为
+\[
+P=dG=3G.
+\]
+
+由点加法计算可得：
+\[
+2G=(10,6),\qquad 3G=(6,2)
+\]
+因此 Bob 的公钥为
+\[
+P=(6,2).
+\]
+
+现在发送方 Alice 想加密消息\(m\)，先编码\(P_m=f(m)\)
+
+假设
+\[
+P_m=(5,6)
+\]
+
+Alice 随机选择整数
+\[
+k=4.
+\]
+
+椭圆曲线 ElGamal 加密公式为
+\[
+C_1=kG,\qquad C_2=P_m+kP.
+\]
+
+首先计算：
+\[
+C_1=4G=(5,6).
+\]
+
+又因为
+\[
+kP=4P=4(6,2)=(1,1),
+\]
+所以
+\[
+C_2=P_m+kP=(5,6)+(1,1).
+\]
+
+计算点加法：
+\[
+\lambda=\frac{1-6}{1-5}
+=\frac{-5}{-4}
+=\frac{8}{9}\pmod{13}.
+\]
+
+由于
+\[
+9^{-1}\equiv 3\pmod{13},
+\]
+所以
+\[
+\lambda\equiv 8\cdot 3\equiv 24\equiv 11\pmod{13}.
+\]
+
+于是
+\[
+x_3=\lambda^2-x_1-x_2
+=11^2-5-1
+=115\equiv 11\pmod{13},
+\]
+\[
+y_3=\lambda(x_1-x_3)-y_1
+=11(5-11)-6
+=-72\equiv 6\pmod{13}.
+\]
+
+因此
+\[
+C_2=(11,6).
+\]
+
+所以密文为
+\[
+C=(C_1,C_2)=((5,6),(11,6)).
+\]
+
+解密时，Bob 计算
+\[
+P_m=C_2-dC_1.
+\]
+
+因为
+\[
+dC_1=3(5,6)=(1,1),
+\]
+所以
+\[
+P_m=(11,6)-(1,1).
+\]
+
+点 $(1,1)$ 的逆元为
+\[
+-(1,1)=(1,12).
+\]
+
+因此
+\[
+P_m=(11,6)+(1,12)=(5,6).
+\]
+
+这与原明文点一致，因此解密成功。
+
+（4）如果用户未对点 $Q=(5,0)$ 作相关检查，
+
+可以尝试计算 $kQ$，
+
+当\(k=2\)时，
+\[
+\lambda \equiv \frac{3\cdot 5^2+2}{0} \pmod{13}= \text{未定义}
+\]
+因此无法计算 $2Q$，更无法计算 $kQ$，这会导致加密或解密过程失败。
+
+3.（30分）
+
+\textbf{练习 1.17}\quad 利用 Pohlig-Hellman 算法求解 $\log_a b$
+
+\begin{enumerate}
+    \item $p=41,\ a=6,\ b=29$
+    
+    \item $p=37,\ a=2,\ b=29$
+\end{enumerate}
+
+解：
+
+（1）
+相当于求解\[
+6^x \equiv 29 \pmod{41}
+\]
+首先\(p-1 = 2^3 \times 5\)
+所以只需要求解
+\[
+x \pmod {2^3}, \quad x \pmod 5
+\]
+为求解$x \pmod{2^3}$，计算
+\[
+x = x_0 + 2x_1 + 4x_2 + 8S
+\]
+其中\(x_0 \)满足
+\[
+29^{\frac{40}{2}} \equiv 6^{\frac{40}{2}x_0} \pmod{41}
+\]
+即
+\[
+29^{20} \equiv 6^{20x_0} \pmod{41}
+\]
+计算得到
+\[29^{20} \equiv 1 \pmod{41},\qquad 6^{20} \equiv 1 \pmod{41}\]
+所以
+\[x_0 = 1\]
+接下来计算\(x_1\)，首先计算
+\[
+(29\times 6^{-1})^{\frac{40}{4}} \equiv 6^{\frac{40}{2}x_1} \pmod{41}
+\]
+即
+\[
+39^{10} \equiv 6^{20x_1} \pmod{41}
+\]
+计算得到
+\[39^{10} \equiv 40 \pmod{41},\qquad 6^{20} \equiv 1 \pmod{41}\]
+所以
+\[x_1 = 1\]
+接下来计算\(x_2\)，首先计算
+\[
+(29\times 6^{-3})^{\frac{40}{8}} \equiv 6^{\frac{40}{2}x_2} \pmod{41}
+\]
+即
+\[
+25^{5} \equiv 6^{20x_2} \pmod{41}
+\]
+计算得到
+\[25^{5} \equiv 40 \pmod{41},\qquad 6^{20} \equiv 1 \pmod{41}\]
+所以
+\[x_2 = 1\]
+因此
+\[x \equiv 1 + 2 + 4 \equiv 7 \pmod{8}\]
+为求解$x \mod 5$，计算
+\[29^{\frac{40}{5}} \equiv 6^{\frac{40}{5}x} \pmod{41}\]
+即
+\[29^{8} \equiv 6^{8x} \pmod{41}\]
+遍历$x=0,1,2,3,4$，计算得到
+\[29^{8} \equiv 16 \pmod{41},\qquad 6^{16} \equiv 16 \pmod{41}\]
+所以
+\[x \equiv 2 \pmod{5}\]
+综上所述，$x$ 满足
+\[x \equiv 7 \pmod{8},\qquad x \equiv 2 \pmod{5}\]
+综上：
+
+\[
+\begin{cases}
+x\equiv7\pmod8,\\
+x\equiv2\pmod5.
+\end{cases}
+\]
+
+利用中国剩余定理：
+
+\[
+M=8\times5=40,
+\]
+
+\[
+M_1=\frac{40}{8}=5,\qquad M_2=\frac{40}{5}=8.
+\]
+
+求逆元：
+
+\[
+5^{-1}\equiv5\pmod8,
+\]
+
+\[
+8^{-1}\equiv2\pmod5.
+\]
+
+因此
+
+\[
+x
+\equiv
+7\cdot5\cdot5
++
+2\cdot8\cdot2
+\pmod{40}.
+\]
+
+即
+
+\[
+x\equiv175+32=207\equiv7\pmod{40}.
+\]
+
+因此
+
+\[
+\log_6 29 \equiv 7   
+\]
+
+（2）
+相当于求解\[2^x \equiv 29 \pmod{37}
+\]
+首先\(p-1 = 2^2 \times 3^2\)
+所以只需要求解
+\[x \pmod{2^2}, \quad x \mod 3^2
+\]
+为求解$x \pmod{2^2}$，计算
+\[x = x_0 + 2x_1 + 4S
+\]其中\(x_0 \)满足
+\[29^{\frac{36}{2}} \equiv 2^{\frac{36}{2}x_0} \pmod{37}
+\]即
+\[29^{18} \equiv 2^{18x_0} \pmod{37}
+\]计算得到
+\[29^{18} \equiv 36 \pmod{37},\qquad 2^{18} \equiv 1 \pmod{37}
+\]所以
+\[x_0 = 1\]
+接下来计算\(x_1\)，首先计算
+\[
+29\times 2^{-1} \equiv 29 \times 19 \equiv 33 \pmod{37}
+\]
+即
+\[
+33^{9} \equiv 2^{18x_1} \pmod{37}
+\]
+计算得到
+\[33^{9} \equiv 1 \pmod{37}\]
+所以
+\[x_1 = 0\]
+因此
+\[x \equiv 1 \pmod{4}\]
+为求解$x \mod 3^2$，计算
+\[
+x = y_0 + 3y_1 + 9S
+\]
+\[29^{\frac{36}{3}} \equiv 2^{\frac{36}{3}y_0} \pmod{37}
+\]即
+\[29^{12} \equiv 2^{12y_0} \pmod{37}
+\]计算得到
+\[29^{12} \equiv 1 \pmod{37}\]
+所以
+\[y_0 = 0\]
+接下来计算\(y_1\)，首先计算
+\[29\times 2^{0} \equiv 29 \pmod{37}
+\]
+即
+\[
+29^{4} \equiv 2^{12y_1} \pmod{37}
+\]
+计算得到
+\[29^{4} \equiv 26 \pmod{37},\qquad 2^{12} \equiv 1 \pmod{37}\]
+所以
+\[y_1 = 1\]
+因此
+\[x \equiv 4 \pmod{9}\]
+综上所述，$x$ 满足
+\[x \equiv 1 \pmod{4},\qquad x \equiv 4 \pmod{9}\]
+综上：
+
+\[
+\begin{cases}
+x\equiv1\pmod4,\\
+x\equiv3\pmod9.
+\end{cases}
+\]
+
+利用中国剩余定理：
+
+\[
+M=4\times9=36,
+\]
+
+\[
+M_1=\frac{36}{4}=9,\qquad M_2=\frac{36}{9}=4.
+\]
+
+求逆元：
+
+\[
+9^{-1}\equiv1\pmod4,
+\]
+
+\[
+4^{-1}\equiv7\pmod9.
+\]
+
+因此：
+
+\[
+x
+\equiv
+1\cdot9\cdot1
++
+3\cdot4\cdot7
+\pmod{36}.
+\]
+
+即
+
+\[
+x\equiv9+84=93\equiv21\pmod{36}.
+\]
+
+因此
+
+\[
+\log_2 29 \equiv 21
+\]
+\end{document}

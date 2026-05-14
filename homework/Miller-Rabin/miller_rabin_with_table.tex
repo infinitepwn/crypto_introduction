@@ -1,0 +1,63 @@
+
+\documentclass[12pt]{article}
+\usepackage{ctex}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{geometry}
+\usepackage{listings}
+\geometry{a4paper, margin=1in}
+
+\lstdefinestyle{numstyle}{
+  basicstyle=\ttfamily\scriptsize,
+  breaklines=false,
+  columns=fixed,
+  keepspaces=true,
+  frame=single,
+  xleftmargin=0pt,
+  framexleftmargin=6pt,
+  framesep=6pt
+}
+
+\title{Miller-Rabin 算法测试结果附录}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section*{测试结果汇总}
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{cccc}
+\toprule
+实现 & 位数 & 判定 & 时间(ms) \\
+\midrule
+Python & 2048 & 合数 & 24.934 \\
+Python & 2048 & 素数 & 26.014 \\
+Python & 4096 & 合数 & 195.112 \\
+Python & 4096 & 素数 & 193.670 \\
+C++ & 2048 & 素数 & 2 \\
+C++ & 2048 & 合数 & 2 \\
+C++ & 4096 & 素数 & 13 \\
+C++ & 4096 & 合数 & 17 \\
+\bottomrule
+\end{tabular}
+\caption{Miller-Rabin 性能对比}
+\end{table}
+
+\section*{示例输出（节选）}
+
+\subsection*{2048 bit 示例}
+\begin{lstlisting}[style=numstyle]
+2039029083347791175449514962424947719798676116289494954682753086635997009705903277086620842337463474
+3888041881685333472744882736849523372201187094688815688744794032494461716588087570549607825649176514
+\end{lstlisting}
+
+\subsection*{4096 bit 示例}
+\begin{lstlisting}[style=numstyle]
+8904653566152935026435485022020367092625337191432224016910242963969686170611197503506612098661387240
+5879904760839283742454310291971076311510332595596656979272321387822285710991692306244266324066737997
+\end{lstlisting}
+
+\end{document}

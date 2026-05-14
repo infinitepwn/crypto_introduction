@@ -1,0 +1,270 @@
+\documentclass[12pt,a4paper]{article}
+
+% --- 核心宏包 ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{ctex} 
+\usepackage{amsmath, amsfonts, amssymb}
+\usepackage{geometry}
+\usepackage{listings}
+\usepackage{longtable}
+\usepackage{float}
+\usepackage{url}
+\geometry{left=2.5cm, right=2.5cm, top=3cm, bottom=3cm}
+
+% --- 视觉与排版优化宏包 ---
+\usepackage[table]{xcolor} % 颜色支持，带有表格填色功能
+\usepackage{booktabs}      % 三线表美化
+\usepackage{fancyhdr}      % 自定义页眉页脚
+\usepackage[many]{tcolorbox} % 强大的带框/背景盒工具
+\usepackage{enumitem}      % 列表间距调整
+\usepackage{hyperref}      % 交叉引用与超链接
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta} % 必须有 positioning
+\definecolor{macblue}{RGB}{0, 122, 255}    % 强调蓝
+\definecolor{bglight}{RGB}{245, 245, 247}  % 极简浅灰背景
+\definecolor{darkgray}{RGB}{51, 51, 51}
+\definecolor{warningred}{RGB}{255, 59, 48} % 增加红色用于攻击/警告的强调
+% --- 超链接设置 ---
+\hypersetup{
+    colorlinks=true,
+    linkcolor=macblue,
+    urlcolor=macblue
+}
+
+% --- 页眉页脚设置 ---
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\textcolor{macblue}{\textbf{Homework}}} % 左侧显示实验报告
+\fancyhead[R]{\textbf{RSA 加密算法与解密加速}} % 右侧显示实验名称
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.8pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{macblue}\leaders\hrule height \headrulewidth\hfill}}
+
+% --- 自定义高亮公式框 ---
+\newtcolorbox{coreconcept}[1][]{
+    colback=bglight,
+    colframe=macblue,
+    fonttitle=\bfseries\sffamily,
+    title=#1,
+    arc=3mm,
+    boxrule=1.2pt,
+    shadow={2mm}{-1.5mm}{0mm}{black!15},
+    left=10pt, right=10pt, top=5pt, bottom=5pt
+}
+\newtcolorbox{warningbox}[1][]{
+    colback=warningred!5,
+    colframe=warningred,
+    fonttitle=\bfseries\sffamily,
+    title=#1,
+    arc=3mm,
+    boxrule=1.2pt,
+    left=10pt, right=10pt, top=5pt, bottom=5pt
+}
+
+% --- 标题区域 ---
+\title{
+\textbf{\LARGE{RSA 加密算法与解密加速}}\\[0.5em]
+}
+\author{\textbf{202400460046邱泽辉}}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{fancy} % 首页也显示漂亮页眉
+\begin{enumerate}
+    \item 现有两个 RSA 加密系统，它们的公钥分别为(65537, \(n_1\)) 和(65537, \(n_2\))。
+已知模\(n_1 \neq n_2\) 并且\(n_1,n_2\)有大于 1 的公因子。你能在短时间内计算出这两个 RSA
+加密系统的私钥吗？请描述计算方法。
+
+解:由于\[
+    n_1 = p_1q_1,n_2 = p_2q_2
+    \]
+其中\(p_1,q_1,p_2,q_2\)都为素数，如果\((n_1,n_2)>1\),那么\((n_1,n_2) = \)\(p_1\)或\(q_1\),否则说明存在因子整除\(p_1\)或者\(q_1\),这与素数矛盾
+
+另一方面，\((n_1,n_2) = \)\(p_2\)或\(q_2\)
+
+不妨设\((n_1,n_2)=p_1=p_2\)
+
+首先使用Eculid算法求出\((n_1,n_2)\),那么\(q_1 = \frac{n_1}{(n_1,n_2)}\)，\(q_2 = \frac{n_2}{(n_1,n_2)}\)
+
+计算\(\phi(n_1)=(p_1-1)(q_1-1),\phi(n_2)=(p_2-1)(q_2-1)\),而\(e=65537\)
+
+使用拓展Eculid算法计算逆元就能得到私钥,\(d_1 = e^{-1} \pmod{\phi(n_1)} \),\(d_2 = e^{-1} \pmod{\phi(n_2)} \)
+    \item 对RSA加密算法做如下修改：\(ed\equiv 1 \pmod{\lambda(n)}\)，其中\(\lambda(n)=\frac{(p-1)(q-1)}{gcd((p-1,q-1))}\)
+证明修改后方案的正确性。
+
+证明:给定由KeyGen 生成的(pk,sk)，对任意\(m\in Z_n\)，以下等式成立
+\[\text{Dec}_{\text{sk}}(\text{Enc}_{\text{pk}}(m))=m\]
+
+由\(ed\equiv 1 \pmod{\lambda(n)}\),存在\(k\)满足\[ed = k\lambda(n)+1\]
+
+则\[
+\text{Dec}_{\text{sk}}(\text{Enc}_{\text{sk}}(m)) = \text{Dec}_{\text{sk}}(m^e) = m^{ed} \pmod n
+\]
+
+而\[
+m^{ed} \pmod n = m^{k\lambda(n)+1}
+\]
+
+注意到\[
+m^{\lambda(n)} = m^{\text{lcm}(p-1,q-1)}
+\]
+
+则
+\[
+p-1 | \lambda(n)
+\]
+
+若\(p\nmid m\),则由费马小定理\(m^{p-1} \equiv 1 \pmod p\),\(m^{\lambda(n)} \equiv 1 \pmod p\)
+
+若\(p| m\)，则\(m^{\lambda(n)}\equiv 1 \pmod p\)
+
+综上，\(m^{\lambda(n)}\equiv 1 \pmod p\)
+
+同理\(m^{\lambda(n)}\equiv 1 \pmod q\)
+
+那么\(m^{\lambda(n)}\equiv 1 \pmod n\)
+
+所以
+\(m^{ed} \equiv m \pmod n\)
+
+因此算法正确
+
+\item 已知 n=3026533，利用中国剩余定理加速解密算法，设加密指数 e=3, 解
+密指数 d= 2015347，密文 c=152702，求明文 m。
+
+解:因式分解得到\(p=1511,q=2003\),
+
+\(d_p \equiv d \pmod{(p-1)} = 1007\),\(d_q \equiv d \pmod{(q-1)} =1335\)
+
+然后计算
+\[
+c_p = c \pmod p = 91,c_q = c \pmod q = 474
+\]
+\[
+m_p = c_p^{d_p} \pmod p = 610
+\]
+\[
+m_q = c_q^{d_q} \pmod q = 969
+\]
+使用中国剩余定理
+\[
+m = q\times q^{-1} \times m_p + p \times p^{-1} \times m_q \pmod n
+\]
+其中利用拓展欧几里得算法求逆元
+\[
+q^{-1} \pmod p = 777,p^{-1} \pmod q = 973
+\]
+带入得到
+\[
+m = 2003 \times 777 \times 610 + 1511 \times 973 \times 969 \pmod{3026533} = 1186745
+\]
+\end{enumerate}
+4.\textbf{练习 9.2} \quad 设 $n = pq$（假定 $p > q$）为一个 3076 比特的 RSA 模数。下面的程序表明当 $p - q$ 很小时，此类 RSA 加密可以被破解：
+\begin{align*}
+&x \leftarrow \lceil 2\sqrt{n} \rceil; \\
+&\textbf{while } (\text{true}) \\
+\quad &\textbf{if } (x^2 - 4n \text{ is a square of an integer})\ \textbf{break;} \\
+\quad &x \leftarrow x + 1; \\
+&\textbf{return } (x - 1);
+\end{align*}
+
+\begin{enumerate}
+\item 已知 $p - q < 10 \cdot 2^{768}$。利用关系
+\[
+p + q - 2\sqrt{n} = \frac{(p - q)^2}{p + q + 2\sqrt{n}}
+\]
+（以及 $p + q > 2\sqrt{n}$），证明上面的程序一定在 100 步之内终止。
+
+\item 如果 $S$ 是上面程序的输出，证明
+\[
+p = \frac{S + \sqrt{S^2 - 4n}}{2}.
+\]
+\end{enumerate}
+解: 
+\begin{enumerate}
+\item
+由于\(p>q,n=pq\),所以
+\[
+p+q > 2\sqrt{pq} = 2\sqrt{n}
+\]
+那么一开始\(x\)的初值\(2\sqrt{n}<p+q\)
+
+注意到当\[
+x = p+q,x^2-4n = (p+q)^2 - 4n = (p-q)^2
+\]
+是完全平方数，所以当\(x=p+q\)时程序一定会终止，每一步\(x\)自增1
+
+因此程序运行的步数最多是
+\[
+p+q - 2\sqrt{n} = \frac{(p-q)^2}{p+q+2\sqrt{n}} < \frac{(p-q)^2}{4\sqrt{n}}
+\]
+又因为\(n \geq 2^{3075}\)
+则
+\[
+p+q - 2\sqrt{n} < \frac{(p-q)^2}{4\sqrt{n}} < \frac{(10 \cdot 2^{768})^2}{4\cdot 2^{1537.5}} \approx 8.83
+\]
+所以这个程序在100步内必然可以完成
+\item 
+不妨设\[
+f(x) = x^2 - 4n,x_0 = \lfloor 2\sqrt{n} \rfloor
+\]
+
+因为\(n\)不是完全平方数，则\(x_0 < 2\sqrt{n}\)
+
+得先证明\(f(x_0)\)和\(f(p+q)\)之间没有其他完全平方数
+\[
+f(x_0) < (2\sqrt{n})^2 - 4n = 0 
+\]
+假设\(f(x)\)为完全平方数，不妨记\(f(x)=y^2(x_0<x<p+q,y>0)\),那么就有
+\[
+x^2-y^2 = 4n
+\]
+
+也就是
+\[
+(x+y)(x-y) = 4n
+\]
+
+由于这个函数是单调递增的，那么
+\[
+0 < y^2 < f(p+q) = (p-q)^2
+\]
+那么
+\[
+0 < y < p-q
+\]
+\(4n\)只有这么几个因子，\(1,2,4,p,q,2p,2q,4p,4q,n,2n,4n\)
+
+由于\[
+2q < x_0 < x+y < 2p
+\]
+
+那么只有\[
+x+y = n,x-y = 4
+\]
+
+那么\[
+x = \frac{n+4}{2}
+\]
+
+由于\(n+4\)为奇数，那么\(x\)不是整数，矛盾，因此\(f(x_0),f(p+q)\)之间不存在其他完全平方数
+
+因此程序必然在\(x=p+q\)时停止
+
+此时\[
+S = p+q,n = pq
+\]
+
+\(p,q\)构造二次方程
+\[
+t^2-St + n = 0
+\]
+\(p\)是较大的那个根，所以\[
+p = \frac{S+\sqrt{S^2-4n}}{2}
+\]
+
+\end{enumerate}
+\end{document}
