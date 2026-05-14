@@ -9,7 +9,7 @@
 \begin{table}[H]
     \centering
     \caption{5号目标密文分组结果}
-    \begin{tabular}{|c|l|}
+    \begin{tabular}{|c|c|}
         \hline
         分组 & 十六进制表示 \\
         \hline
@@ -23,13 +23,10 @@
         \hline
     \end{tabular}
 \end{table}
-
 在 CBC 解密过程中，$IV$ 可视为第 0 个密文分组，即 $C_0 = IV$。因此三个明文分组的恢复关系分别为：
-
-\begin{align}
+\begin{align*}
     P_1 &= Dec_k(C_1) \oplus IV, \\
     P_2 &= Dec_k(C_2) \oplus C_1, \\
     P_3 &= Dec_k(C_3) \oplus C_2.
-\end{align}
-
+\end{align*}
 后续攻击过程的目标就是分别恢复 $D_k(C_1)$、$D_k(C_2)$ 和 $D_k(C_3)$ 的中间状态，再与对应的前一分组异或，得到当前密文分组对应的明文，最终拼接出完整明文。由于 Padding Oracle 攻击总是针对“提交密文中的最后一个分组”进行判断，因此在实际查询时，需要构造密文使当前待恢复的目标块位于查询密文的末尾位置。
