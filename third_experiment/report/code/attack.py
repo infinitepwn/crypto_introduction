@@ -1,10 +1,10 @@
 import requests
 from tqdm import *
-ciphertext = '''46307250616464316e674f7261636c33
-9ae0735429869542efc40dcdc3f4c170
-649463f719c5ddf4ce8c6d1ef0e5d41a
-c5d137629e3fe1340cfaad7e21d65d14'''
-cipher = [ciphertext[:32],ciphertext[32:64],ciphertext[64:96],ciphertext[96:128]]
+IV = '46307250616464316e674f7261636c33'
+C1 = '9ae0735429869542efc40dcdc3f4c170'
+C2 = '649463f719c5ddf4ce8c6d1ef0e5d41a' 
+C3 = 'c5d137629e3fe1340cfaad7e21d65d14'
+cipher = [IV,C1,C2,C3]
 #获取第i到j字节
 def get_bytes(s,i,j):  
     if j < i:
