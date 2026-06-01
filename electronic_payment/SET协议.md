@@ -33,8 +33,7 @@ $$Sig(sk_C,H(H(OI)||H(PI))),OI,H(PI),Cert_C$$
 同时还要发送[[混合加密]]的密文
 实际加密用的是对称密码DES，密钥是sk1，但是sk1要通过非对称密码来加密
 $$
-Enc(pk_p,acc||sk_1),Enc(sk_1,Sig(sk_C,H(OI)||H(PI))||H(OI)||PI)
-$$
+Enc(pk_p,acc||sk_1),Enc(sk_1,Sig(sk_C,H(OI)||H(PI))||H(OI)||PI)$$
 sk1是持卡人临时生成的，商家是无法解开这个密文的，只有支付网关可以
 
 5. 验证订单信息
