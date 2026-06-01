@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "README.md",
+                "file": "electronic_payment/E-cash.md",
                 "mode": "source",
-                "source": false
+                "source": true
               },
               "icon": "lucide-file",
-              "title": "README"
+              "title": "E-cash"
             }
           }
         ]
@@ -94,7 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "README.md",
+                "file": "electronic_payment/E-cash.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "README 的反向链接列表"
+              "title": "E-cash 的反向链接列表"
             }
           },
           {
@@ -113,12 +113,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "README.md",
+                "file": "electronic_payment/E-cash.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "README 的出链列表"
+              "title": "E-cash 的出链列表"
             }
           },
           {
@@ -156,13 +156,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "README.md",
+                "file": "electronic_payment/E-cash.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "README 的大纲"
+              "title": "E-cash 的大纲"
             }
           },
           {
@@ -196,12 +196,13 @@
   },
   "active": "d376cf8ff569f2e8",
   "lastOpenFiles": [
-    "electronic_payment/SET协议.md",
-    "electronic_payment/E-cash.md",
-    "electronic_payment/电子货币.md",
     "electronic_payment/电子货币协议.md",
-    "electronic_payment/3D-Secure.md",
     "electronic_payment/电子货币发展.md",
+    "electronic_payment/3D-Secure.md",
+    "electronic_payment/SET协议.md",
+    "electronic_payment/电子货币.md",
+    "README.md",
+    "electronic_payment/E-cash.md",
     "key_distribution/public_key/Certification.md",
     "key_distribution/public_key/Diffie-Hellman密钥交换协议.md",
     "key_distribution/symmetry_key/Bellare-Rogaway协议.md",

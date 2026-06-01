@@ -25,14 +25,10 @@
 
 1. 发送购买请求REQ
 2. 回应购买请求RES1
-$$
-Sig(sk_M,H(RES1)),Cert_M,Cert_P
-$$
+$$Sig(sk_M,H(RES1)),Cert_M,Cert_P$$
 3. 验证响应合法性：确认商家身份
 4. 发送订单与支付信息
-$$
-Sig(sk_C,H(H(OI)||H(PI))),OI,H(PI),Cert_C
-$$
+$$Sig(sk_C,H(H(OI)||H(PI))),OI,H(PI),Cert_C$$
 商家可以通过收到的OI和H(PI)验证签名，对PI进行哈希函数是因为不希望被购物网站知晓？（注意这个签名同时被商家和支付网关验证了）
 同时还要发送[[混合加密]]的密文
 实际加密用的是对称密码DES，密钥是sk1，但是sk1要通过非对称密码来加密
@@ -47,9 +43,7 @@ sk1是持卡人临时生成的，商家是无法解开这个密文的，只有�
 ![image.png](https://raw.githubusercontent.com/infinitepwn/note_picbed/main/20260601150950642.png)
 
 1. 请求支付授权
-$$
-Enc(pk_P,sk_2),Enc(sk_2,Sig(sk_M,H(AuthREQ)||AuthREQ))
-$$
+$$Enc(pk_P,sk_2),Enc(sk_2,Sig(sk_M,H(AuthREQ)||AuthREQ))$$
 再附加上之前持卡人发过来的
 $$Enc(pk_p,acc||sk_1),Enc(sk_1,Sig(sk_C,H(OI)||H(PI))||H(OI)||PI)$$
 2. 验证支付授权请求
