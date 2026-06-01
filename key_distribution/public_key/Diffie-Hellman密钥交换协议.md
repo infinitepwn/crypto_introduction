@@ -10,6 +10,6 @@ $$
 $$
 缺乏认证，无法防范中间人攻击
 
-![image-20260519153604819](/Users/infinite/Library/Application Support/typora-user-images/image-20260519153604819.png)
+![image-20260519153604819](https://raw.githubusercontent.com/infinitepwn/note_picbed/main/image-20260519153604819.png)
 
-![image-20260519153615903](/Users/infinite/Library/Application Support/typora-user-images/image-20260519153615903.png)
+![image-20260519153615903](https://raw.githubusercontent.com/infinitepwn/note_picbed/main/image-20260519153615903.png)

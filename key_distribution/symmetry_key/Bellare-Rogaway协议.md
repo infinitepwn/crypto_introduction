@@ -1,1 +1,1 @@
-![image-20260519154629738](/Users/infinite/Library/Application Support/typora-user-images/image-20260519154629738.png)
+![image-20260519154629738](https://raw.githubusercontent.com/infinitepwn/note_picbed/main/image-20260519154629738.png)
