@@ -5,6 +5,7 @@
 ##  基于RSA的盲签名
 
 ![cover387_20260601135109_副本.jpg](https://raw.githubusercontent.com/infinitepwn/note_picbed/main/cover387_20260601135109_副本.jpg)
+### 盲花因子
 
 ## E-cash主要流程
 ![image.png](https://raw.githubusercontent.com/infinitepwn/note_picbed/main/20260601154003151.png)

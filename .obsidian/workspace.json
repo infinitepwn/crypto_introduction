@@ -15,7 +15,7 @@
               "state": {
                 "file": "electronic_payment/E-cash.md",
                 "mode": "source",
-                "source": true
+                "source": false
               },
               "icon": "lucide-file",
               "title": "E-cash"
@@ -180,7 +180,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 200
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -196,12 +196,17 @@
   },
   "active": "d376cf8ff569f2e8",
   "lastOpenFiles": [
-    "electronic_payment/电子货币发展.md",
-    "electronic_payment/SET协议.md",
-    "electronic_payment/电子货币协议.md",
+    "electronic_payment/区块链.md",
     "electronic_payment/E-cash.md",
-    "electronic_payment/3D-Secure.md",
+    "electronic_payment/双花问题.md",
     "electronic_payment/电子货币.md",
+    "electronic_payment/比特币.md",
+    "electronic_payment/电子货币发展.md",
+    "electronic_payment/电子货币协议.md",
+    "digital_signature/数字签名.md",
+    "electronic_payment/3D-Secure.md",
+    "hash_function/MD结构.md",
+    "electronic_payment/SET协议.md",
     "README.md",
     "key_distribution/public_key/Certification.md",
     "key_distribution/public_key/Diffie-Hellman密钥交换协议.md",
@@ -211,21 +216,16 @@
     "zero_knowledge_proof/什么是零知识证明.md",
     "^交互式证明.md",
     "zero_knowledge_proof/证明零知识性.md",
-    "digital_signature/数字签名.md",
     "digital_signature/唯密钥攻击.md",
     "key_distribution/symmetry_key/Kerberos-V5.md",
     "key_distribution/symmetry_key/Needham-Schroeder协议.md",
     "key_distribution/symmetry_key/Needham-Schroeder协议~.md",
     "key_distribution/public_key/Diffie-Hellman密钥交换协议~.md",
     "digital_signature/ElGamal/如何保证k是随机的.md",
-    "digital_signature/Thought.md",
-    "Users/infinite/Library/Application.md",
     "Users/infinite/Library",
     "Users/infinite",
     "Users",
     "Pasted image 20260601141326.png",
-    "digital_signature/ElGamal/什么是ElGamal.md",
-    "digital_signature/Schnorr/如果c=H(m).md",
     "electronic_payment"
   ]
 }
