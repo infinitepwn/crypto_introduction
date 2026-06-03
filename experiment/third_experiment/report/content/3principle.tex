@@ -1,0 +1,84 @@
+\section{实验原理}
+\subsection{Diffie-Hellman密钥协商协议}
+Diffie-Hellman密钥协商协议基于离散对数问题困难性(DLP),实现通信双方$P_A,P_B$共享
+相同会话密钥,协议基本过程如下:
+\begin{itemize}
+    \item [1.]$P_A$随机选择$r_A \in [1,q-1]$,计算$R_A = g^{r_A}$,并将$R_A$发送给$P_B$;
+    \item [2.]$P_B$随机选择$r_B \in [1,q-1]$,计算$R_B = g^{r_B},K_{AB} = R_A^{r_B}$,并将$R_B$发送给$P_A$;
+    \item [3.]$P_A$计算$K_{AB} = R_B^{r_A}$.
+\end{itemize}
+以上过程实现了$P_A,P_B$共同协商建立了会话密钥$K_{AB}$:
+\[  K_{AB}  = R_B^{r_A} = (g^{r_B})^{r_A} = g^{r_B r_A} = (g^{r_A})^{r_B} = R_A^{r_B}  \]
+但是该密钥协商协议难以抵御中间人攻击,根本原因在于基础版的Diffie-Hellman密钥交换协议缺乏认证,合法用户无法确认所收到消息来源的真实性。
+
+\subsection{认证密钥协商协议}
+认证密钥协商(authenticated key exchange,AKE)允许两个或多个用户在不安全网络信道上进行身份和消息认证,并协商会话密钥,从而建立安全信道进行通信。
+\subsubsection{端到端密钥协商}
+端到端密钥协商(station to station,STS)是AKE协议中的一种,其本质为一种带有认证功能的Diffie-Hellman协议,使用"认证"的公钥数字签名提供认证性。
+其认证即认证公钥的真实性,是通过可信第三方:证书认证机构(certification authority,CA)进行的。用户在CA处注册并得到证书(certificate),该证书
+实质是CA对用户身份与公钥的数字签名,其作用是验证用户公钥的合法性,如CA为用户$P_A$颁发的证书如下:
+\[Cert(P_A) = (ID_A,pk_A,\sigma_{CA,A})\]
+其中$ID_A$为用户$P_A$的唯一标识符,$pk_A$为用户$P_A$的公钥,$\sigma_{CA,A}$为CA用自己的私钥$sk_{CA}$对消息$ID_A||pk_A$的数字签名。
+STS协议基本过程如下:
+\begin{itemize}
+    \item [0.]首先通信双方$P_A,P_B$需要在CA处注册得到各自的证书:
+    \[ Cert(P_A) = (ID_A,pk_A,\sigma_{CA,A}),Cert(P_B) = (ID_B,pk_B,\sigma_{CB,B})  \]
+    \item [1.]$P_A$随机选择$r_A \in [1,q-1]$,然后计算$R_A = g^{r_A}$,并将$Cert(P_A),R_A$发送给$P_B$.
+    \item [2.]$P_B$随机选择$r_B \in [1,q-1]$,然后计算$R_B = g^{r_B}$,$K_{AB} = (R_A)^{r_B}$和$\sigma_B = Sign_{sk_B}(ID_A||R_B||R_A)$,并将$Cert(P_B),R_B,\sigma_B$发送给$P_A$.
+    \item [3.]$P_A$首先利用$Cert(P_B)$验证$pk_B$的合法性,若无效则拒绝通信并退出;使用$pk_B$验证签名$\sigma_B$,若无效则拒绝通信并退出;否则接收,计算$K_{AB} = (R_B)^{r_A}$和$\sigma_A = Sign_{sk_A}(ID_B||R_A||R_B)$,并将$\sigma_A$发送给$P_B$.
+    \item [4.]$P_B$首先使用$Cert(P_A)$验证$pk_A$的合法性,若无效则拒绝通信并退出;使用$pk_A$验证签名$\sigma_A$,若无效则拒绝通信并退出;否则接收,计算$K_{AB} = (R_A)^{r_B}$.
+\end{itemize}
+STS协议包含Diffie-Hellman协议的主要步骤,能够保持对会话密钥的保密性,并对所发送消息添加了签名认证机制,因此能有效抵御中间人攻击。
+
+
+\subsection{传输层安全协议标准}
+传输层安全(transport layer security,TLS)协议用于在两个通信应用之间提供保密性和认证性,协议本身由TLS握手协议(TLS handshake)和TLS记录协议(TLS record)组成,其中
+TLS握手协议负责服务器向客户端认证自身进而与客户端协商密钥;TLS记录协议使用握手协议协商的密钥对消息数据进行加密与认证。
+TLS1.3协议采用基于椭圆曲线上的Diffie-Hellman密钥协商协议,其基本过程如下:
+\begin{itemize}
+    \item [1.]客户端随机选择$r_C = \{0,1\}^{256}$,$x \in \mathbb{Z}_q$,计算$X = g^x$,将$\{  r_C , X\}$发送给服务器。
+    \item [2.]服务器端S随机选择$r_S = \{  0,1 \}^{256}, y \in \mathbb{Z}_q$,计算$Y = g^y$,S计算$Z = X^y$,并进一步得到以下密钥
+    \[
+    \begin{cases}
+        hts_C || hts_S = F_1(Z,r_C||X||r_S||Y),\\
+        htk_C || htk_S = KDF(hts_C || hts_S,\epsilon)
+    \end{cases}
+    \]
+    其中$\epsilon$为固定标签信息,$hts_C,hts_S$分别是用以生成客户端与服务器,在握手阶段的密钥,保护握手阶段需要保密的信息。服务器生成签名:
+    \[
+    \begin{cases}
+        H_1 = H(r_C|| \cdots  ||Cert_S)\\
+        \sigma_S = Sign_{sk_s}(l_{SCV}||H_1)
+    \end{cases}
+    \]
+    其中$l_{SCV}$是固定的标签信息,$H_1$表示服务器当前接收与本步将要发送的所有消息杂凑值.计算:
+    \[
+        \begin{cases}
+            fk_S = HKDF(hts_S,l_5,\mu)\\
+            fk_C = HKDF(hts_C,l_5,\mu)\\
+            H_2 = H(r_C || \cdots || Cert_S||\sigma_S)\\
+            fin_S = HMAC(fk_S,H_2)
+        \end{cases}
+    \]
+    其中$l_5$表示固定的标签信息,$\mu$表示HKDF的输出长度.使用$htk_S$加密$Cert_S||\sigma_S||fin_S$,将$\{ r_S,Y,Enc_{htk_S}(Cert_S || \sigma_S || fin_S)  \}$发送给客户端。
+    \item [3.]客户端收到信息后,计算$Z = Y^x$,同2步计算方法,得到$hts_C || hts_S$与$htk_C || htk_S$,使用$htk_S$解密信息,验证$Cert_S.\sigma_S,fin_S$是否合法.计算
+    \[
+    \begin{cases}
+        H_3 = H(r_C || \cdots || Cert_S || Cert_C)\\
+        \sigma_C = Sign_{sk_C}(l_{CCV}||H_3)\\
+        H_4 = H(r_C || \cdots || Cert_S || \sigma_S ||Cert_C || \sigma_C  )\\
+        fin_C = HMAC(fk_C,H_4)
+    \end{cases}
+    \]
+    其中$l_{CCV}$表示固定标签信息。使用$htk_C$加密$\{ Cert_C || \sigma_C || fin_C   \}$,将密文发送给服务器。
+    \item [4.]服务器使用$htk_C$解密密文,分别验证$Cert_C,\sigma_C,fin_C$是否合法,计算以下密钥
+    \[
+        \begin{cases}
+            ats_C || ats_S = F_2(Z,r_C||\cdots ||fin_S)\\
+            atk_C || atk_S = KDF(ats_C || ats_S,\epsilon)\\
+            ems = F_3(Z,r_C||\cdots ||fin_S)\\
+            rms = F_3(Z,r_C||\cdots ||fin_C)        
+        \end{cases}
+    \]
+    其中$atk_C$与$atk_S$分别表示客户端与服务器的应用流量密钥,用于记录层的认证加密.同理客户端也计算得到上述密钥。
+\end{itemize}
