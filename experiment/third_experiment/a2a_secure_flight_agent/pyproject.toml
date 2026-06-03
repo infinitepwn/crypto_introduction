@@ -1,0 +1,18 @@
+[project]
+name = "a2a-secure-flight-agent"
+version = "0.1.0"
+description = "Secure FlightAgent demo implemented with the A2A Python SDK"
+requires-python = ">=3.11"
+dependencies = [
+    "a2a-sdk[http-server]==0.3.8",
+    "cryptography>=46.0.0",
+    "httpx>=0.28.1",
+    "uvicorn>=0.34.2",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

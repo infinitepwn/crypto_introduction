@@ -1,0 +1,33 @@
+{
+  "ca_private_key": "2Ml3x4g9gkxiVTRw8i6J538LssRC_L8uai1H2Iv0HaI",
+  "alice_private_key": "7C59IpCWVSWuREc0_mi4Rrgb4dcYdp7ewzByhKrFi2o",
+  "alice_certificate": {
+    "body": {
+      "agent_id": "agent:alice",
+      "public_key": "W2paXoJTinsRXQwM64hm_QBfWlBHrIhn4AgmR7CseJs",
+      "permissions": [
+        "delegate",
+        "audit"
+      ],
+      "not_before": "2026-06-01T00:00:00+00:00",
+      "not_after": "2026-12-31T23:59:59+00:00",
+      "issuer": "TrustedOfflineCA"
+    },
+    "ca_signature": "4y1imhLGo2wmJNwejEDxzWiTLGcY-qwWQLnKJoVMVXXJiBE3dd5za9xpEcfNSTOjT586r9XmuE-mKng88t9RCw"
+  },
+  "flight_private_key": "D8zVkSl2l8zSwgKm6vGGkHLnuyiRyWugG-F4MfLwtOk",
+  "flight_certificate": {
+    "body": {
+      "agent_id": "agent:flight",
+      "public_key": "Y57OWLiK9t0DL_KpGpiAi7K4UE5FPim4EsNYKWcGEUY",
+      "permissions": [
+        "flight.search",
+        "flight.book"
+      ],
+      "not_before": "2026-06-01T00:00:00+00:00",
+      "not_after": "2026-12-31T23:59:59+00:00",
+      "issuer": "TrustedOfflineCA"
+    },
+    "ca_signature": "uSrzZqCzb3YTUch0RfB7UT_d9LmeOZn6VXt-wThv1eApe-9ZJZFwG4pXNnPhuRYBuXVZ_Q7KNC0y9ymXho6ECQ"
+  }
+}
