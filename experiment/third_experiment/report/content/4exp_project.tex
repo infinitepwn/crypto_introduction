@@ -1,0 +1,138 @@
+%实验任务架框架架构
+\section{项目架构}
+\subsection{安全目标}
+根据实验指导书所述场景,可以明确该AI智能体协作安全协议应当满足如下安全目标(包括实验要求和额外添加):
+\begin{itemize}
+    \item [1.] 可验证身份绑定:所有智能体持有CA颁发的证书,接收方通过CA公钥验证证书真伪,从而验证对方身份,杜绝伪造的智能体接入交互环节。
+    \item [2.]数据传输机密性:涉及用户隐私的数据,包括行程信息、订单价格、授权凭证数据等均需要保密,杜绝数据泄露风险.
+    \item [3.]授权不扩散:Alice生成的授权凭证包括:总预算、授权权限、授权时效、被授权智能体ID,完整内容由Alice签名认证。凭证内容一旦被篡改,任务随即自动终止,杜绝授权扩散、越权操作。同时授权凭证仅单次会话有效,不可复用。
+    \item [4.]执行全程可追溯:FlightAgent完成业务执行后,必须生成带自身私钥签名的审计回执，回执包含：
+会话 ID、执行时间、订单详情、实际花费、授权凭证摘要、执行智能体 ID。Alice
+汇总所有回执后，可通过对应智能体公钥验证回执真伪，所有交互日志、凭证、
+回执可本地留存，支持事后全流程审计追溯，不可抵赖。
+    \item [5.] 完整性、时效性与防重放:协议中所有关键消息都必须能够验证是最新的、只用一次的、未被篡改的,即效信息内容的完整性校验、防重放、序列号/时间戳验证、会话绑定。
+\end{itemize}
+
+\subsection{流程设计}
+根据上述安全要求,我们设计的AI智能体协作航班预定场景协议流程如下:
+
+\begin{figure}[H]
+\centering
+
+\begin{tikzpicture}[
+    >=Latex,
+    node distance=3cm,
+    every node/.style={font=\small},
+    actor/.style={
+        draw,
+        rounded corners,
+        minimum width=2.5cm,
+        minimum height=1cm
+    }
+]
+
+%------------------------------------------------
+% Nodes
+%------------------------------------------------
+
+\node[actor] (CA) {CA};
+
+\node[actor,
+      below left=2cm and 2cm of CA,
+      minimum height=3cm] (Alice) {Alice};
+
+\node[actor,
+      below right=2cm and 2cm of CA,
+      minimum height=3cm] (FA) {FlightAgent};
+\node[actor, below=2cm of Alice] (User) {user};
+\node[actor, below=2cm of FA] (Airline) {Airline};
+
+%------------------------------------------------
+% CA -> Agents
+%------------------------------------------------
+
+\draw[->] (CA.south west) -- node[left] {step0} (Alice.north);
+\draw[->] (CA.south east) -- node[right] {step0} (FA.north);
+
+%------------------------------------------------
+% Alice <-> FlightAgent
+%------------------------------------------------
+
+\draw[<->]
+($(Alice.north east)!0.10!(Alice.south east)$)
+--
+node[above]{step1}
+($(FA.north west)!0.10!(FA.south west)$);
+
+\draw[->]
+($(Alice.north east)!0.30!(Alice.south east)$)
+--
+node[above]{step2}
+($(FA.north west)!0.30!(FA.south west)$);
+
+\draw[<-]
+($(Alice.north east)!0.50!(Alice.south east)$)
+--
+node[above]{step4}
+($(FA.north west)!0.50!(FA.south west)$);
+
+\draw[->]
+($(Alice.north east)!0.70!(Alice.south east)$)
+--
+node[above]{step5}
+($(FA.north west)!0.70!(FA.south west)$);
+
+\draw[<-]
+($(Alice.north east)!0.90!(Alice.south east)$)
+--
+node[above]{step7}
+($(FA.north west)!0.90!(FA.south west)$);
+%------------------------------------------------
+% FlightAgent <-> Airline
+%------------------------------------------------
+
+\draw[<->]
+([xshift=-0.3cm]FA.south)
+--
+node[left] {step3}
+([xshift=-0.3cm]Airline.north);
+
+\draw[<->]
+([xshift=0.3cm]FA.south)
+--
+node[right] {step6}
+([xshift=0.3cm]Airline.north);
+
+%------------------------------------------------
+% User <-> Alice
+%------------------------------------------------
+
+\draw[<-]
+([xshift=-0.3cm]Alice.south)
+--
+node[left] {step0}
+([xshift=-0.3cm]User.north);
+
+\draw[->]
+([xshift=0.3cm]Alice.south)
+--
+node[right] {step8}
+([xshift=0.3cm]User.north);
+
+\end{tikzpicture}
+
+\caption{Multi-Agent Flight Booking Protocol}
+\end{figure}
+其中CA表示证书认证机构,Alice为用户智能体,FlightAgent为航班预定智能体,user为用户,Airline为航空公司(也可以是智能体)。上述协议具体步骤如下:
+\begin{itemize}
+    \item [step0] Alice和FlightAgent在CA处注册得到各自的证书certificate,user向Alice发出预定机票的命令:"预订
+    下周(2026.06.08-2026.06.16)青岛—纽约往返机票，总预算不超过 10000 元，单人出行",此后仅需等待Alice与FlightAgent协作交互即可,无需user介入操作。
+    \item [step1] Alice与FlightAgent之间通过TLS协议验证对方身份并协商会话密钥。
+    \item [step2] Alice生成授权凭证AuthToken,包括预算、行程、授权信息、授权权限、授权失效、被授权智能体ID等,对这些信息计算杂凑值并签名,将得到的AuthorizationCredential发送给FlightAgent。
+    \item [step3] FlightAgent接收到授权后先验证签名,如果签名不通过则拒绝服务,直接退出;否则,根据授权凭证的信息执行即机票查询操作,将查询结果,包括具体航班、日期、实际价格,时间戳等信息一并计算杂凑值并签名,将签名和加密后的查询信息发给Alice以询问是否购买预定。
+    \item [step4] Alice收到FlightAgent发送来的信息后先验证签名,如果签名不通过则拒绝服务并直接退出;否则,根据查询结果,判断是否购买预定,发送BookRequest给FlightAgent允许其预定机票。
+    \item [step5] FlightAgent收到Alice发送来的BookRequest信息,同样验证签名,不通过则拒绝服务并退出,否则执行step6。
+    \item [step6] FlightAgent在航空公司Airline处预定机票,将具体订单ID、航空公司信息、机票信息、具体花费等信息作为收据Receipt,签名并发回给Alice。
+    \item [step7] Alice验证签名,保存审计记录,并将结果报告给user。
+    \item [step8] Alice将最终结果报告给用户,包括成功预定或中途发生的异常信息。
+\end{itemize}
