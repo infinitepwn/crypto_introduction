@@ -328,3 +328,6 @@ TSWLatexianTemp*
 
 __pycache__/
 venv/
+.DS_Store
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
