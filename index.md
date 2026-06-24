@@ -1,6 +1,6 @@
 # 密码学引论笔记索引
 
-这个索引用于在 GitHub 上直接浏览密码学引论笔记、作业和实验记录。
+这个索引用于在 GitHub 上直接浏览密码学引论笔记。实验目录未列入本页，避免和课程实验材料混在一起。
 
 ## Mathematical-Foundations
 
@@ -60,16 +60,6 @@
 - [电子货币](electronic_payment/电子货币.md)
 - [电子货币协议](electronic_payment/电子货币协议.md)
 - [电子货币发展](electronic_payment/电子货币发展.md)
-
-## experiment/third_experiment/a2a_secure_flight_agent
-
-- [README](experiment/third_experiment/a2a_secure_flight_agent/README.md)
-
-## experiment/third_experiment
-
-- [使用文档](experiment/third_experiment/使用文档.md)
-- [工作日志](experiment/third_experiment/工作日志.md)
-- [设计文档](experiment/third_experiment/设计文档.md)
 
 ## hash_function
 

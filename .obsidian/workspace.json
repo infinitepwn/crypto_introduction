@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "experiment/third_experiment/使用文档.md",
+                "file": "block_cipher/MAC.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "使用文档"
+              "title": "MAC"
             }
           }
         ]
@@ -78,7 +78,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200
+    "width": 337.5
   },
   "right": {
     "id": "cdb52273d191d5c8",
@@ -94,7 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "experiment/third_experiment/使用文档.md",
+                "file": "electronic_payment/E-cash.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "使用文档 的反向链接列表"
+              "title": "E-cash 的反向链接列表"
             }
           },
           {
@@ -113,12 +113,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "experiment/third_experiment/使用文档.md",
+                "file": "electronic_payment/E-cash.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "使用文档 的出链列表"
+              "title": "E-cash 的出链列表"
             }
           },
           {
@@ -156,13 +156,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "experiment/third_experiment/使用文档.md",
+                "file": "electronic_payment/E-cash.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "使用文档 的大纲"
+              "title": "E-cash 的大纲"
             }
           },
           {
@@ -194,43 +194,45 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "32ffebde4a7cdad6",
+  "active": "c225257a8bd7c2be",
   "lastOpenFiles": [
-    "experiment/third_experiment/设计文档.md",
-    "experiment/third_experiment/使用文档.md",
-    "experiment/third_experiment/a2a_secure_flight_agent/__pycache__/security.cpython-314.pyc",
-    "experiment/third_experiment/a2a_secure_flight_agent/__pycache__/agent_executor.cpython-314.pyc",
-    "experiment/third_experiment/a2a_secure_flight_agent/__pycache__/__main__.cpython-314.pyc",
-    "experiment/third_experiment/a2a_secure_flight_agent/uv.lock",
-    "experiment/third_experiment/a2a_secure_flight_agent/trust_store.json",
-    "experiment/third_experiment/a2a_secure_flight_agent/security.py",
-    "experiment/third_experiment/a2a_secure_flight_agent/pyproject.toml",
-    "experiment/third_experiment/a2a_secure_flight_agent/alice_client.py",
-    "experiment/third_experiment/a2a_secure_flight_agent/agent_executor.py",
-    "experiment/third_experiment/a2a_secure_flight_agent/__pycache__",
-    "experiment/third_experiment/a2a_secure_flight_agent/README.md",
-    "experiment/third_experiment/工作日志.md",
+    "index.md",
     "README.md",
-    "README~.md",
-    "Users/infinite/Documents/New project/ai_agent_security_protocol_demo.py.md",
-    "digital_signature/唯密钥攻击.md",
-    "Users/infinite/Documents/New project/AI智能体协作安全协议_设计说明.md",
-    "electronic_payment/电子货币发展.md",
-    "Mathematical-Foundations/欧拉准则.md",
-    "zero_knowledge_proof/零知识证明.md",
-    "zero_knowledge_proof/证明零知识性.md",
-    "Public-key Encryption/公钥密码学.md",
     "Public-key Encryption/Las Vegas算法.md",
-    "digital_signature/安全参数.md",
-    "digital_signature/DSA/为什么要公布p和q的生成过程.md",
-    "Mathematical-Foundations/费马小定理.md",
+    "未命名.md",
     "Public-key Encryption/Rabin加密算法.md",
-    "Mathematical-Foundations/欧拉定理.md",
+    "Public-key Encryption/SM2.md",
+    "key_distribution/symmetry_key/Needham-Schroeder协议.md",
+    "key_distribution/symmetry_key/Kerberos-V5.md",
+    "digital_signature/ElGamal/什么是ElGamal.md",
+    "digital_signature/ElGamal/如何保证k是随机的.md",
+    "digital_signature/DSA/为什么要公布p和q的生成过程.md",
+    "digital_signature/安全参数.md",
     "digital_signature/Thought.md",
-    "electronic_payment/电子货币协议.md",
-    "electronic_payment/区块链.md",
-    "electronic_payment/最长链原则.md",
-    "electronic_payment/E-cash.md",
+    "digital_signature/数字签名.md",
+    "digital_signature/唯密钥攻击.md",
+    "Mathematical-Foundations/模平方根.md",
+    "block_cipher/des/des.pdf",
+    "block_cipher/MAC.md",
+    "digital_signature/Schnorr/如果c=H(m).md",
+    "digital_signature/Schnorr/什么是Schnorr.md",
+    "key_distribution/public_key/Diffie-Hellman密钥交换协议.md",
+    "key_distribution/public_key/Certification.md",
+    "key_distribution/symmetry_key/Bellare-Rogaway协议.md",
+    "key_distribution/symmetry_key/Denning-Sacco攻击.md",
+    "Public-key Encryption/公钥密码学.md",
+    "Mathematical-Foundations/欧拉准则.md",
+    "Mathematical-Foundations/欧拉定理.md",
+    "experiment/third_experiment/report/output/main.pdf",
+    "experiment/third_experiment/report/figures/logo_sduWithText.jpg",
+    "experiment/third_experiment/report/content/4exp_project.tex",
+    "experiment/third_experiment/report/content/3principle.tex",
+    "experiment/third_experiment/report/content/2environment.tex",
+    "experiment/third_experiment/report/content/1target.tex",
+    "experiment/third_experiment/report/config/packages.tex",
+    "experiment/third_experiment/report/config/listing.tex",
+    "experiment/third_experiment/report/config/format.tex",
+    "experiment/third_experiment/report/output",
     "Pasted image 20260601141326.png"
   ]
 }
