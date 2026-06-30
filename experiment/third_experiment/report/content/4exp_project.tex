@@ -125,124 +125,14 @@ node[right] {step8}
 \end{figure}
 其中CA表示证书认证机构,Alice为用户智能体,FlightAgent为航班预定智能体,user为用户,Airline为航空公司(也可以是智能体)。上述协议具体步骤如下:
 \begin{itemize}
-    \item [step0] Alice和FlightAgent在CA处注册得到各自的证书certificate,user向Alice发出预定机票的命令:"预订
-    下周(2026.06.08-2026.06.16)青岛—纽约往返机票，总预算不超过 10000 元，单人出行",此后仅需等待Alice与FlightAgent协作交互即可,无需user介入操作。
-
-    \textbf{密码学操作：} CA使用Ed25519为每个Agent签发身份证书，证书绑定Agent身份与公钥：
-    \begin{coreconcept}[CA证书签发 — Ed25519]
-    \begin{align*}
-        (sk_A, pk_A) &\leftarrow \text{Ed25519.KeyGen()} \\
-        \text{cert\_body}_A &= \{\text{agent\_id}_A,\; \text{pk}_A,\; \text{permissions},\; \text{not\_before},\; \text{not\_after}\} \\
-        \sigma_{CA,A} &= \text{Sign}(sk_{CA},\; \text{canon}(\text{cert\_body}_A)) \qquad \text{(Ed25519, 128-bit安全强度)}\\
-        \text{Cert}_A &= (\text{cert\_body}_A,\; \sigma_{CA,A})
-    \end{align*}
-    \end{coreconcept}
-    参数: Ed25519 (Edwards25519曲线), 证书有效期 2026-06-01 $\sim$ 2026-12-31.\\
-    代码: \texttt{ca/certificate\_authority.py} — \texttt{issue\_agent()}, \texttt{verify\_certificate()}.
-
-    \item [step1] Alice与FlightAgent之间基于STS协议(认证密钥协商)进行身份验证与ECDH会话密钥协商。
-
-    \textbf{密码学操作：}
-    \begin{coreconcept}[Phase 1-2: 认证密钥协商 — X25519 ECDH + Ed25519 + HKDF]
-    \textbf{ClientHello (Alice $\to$ FlightAgent):}
-    \begin{align*}
-        (a, A = g^a) &\leftarrow \text{X25519.KeyGen()} \qquad \text{(临时密钥对)}\\
-        \text{body}_A &= \{\text{session\_id},\; \text{agent\_id}_A,\; A_{pub},\; \text{timestamp}\} \\
-        \sigma_A &= \text{Sign}(sk_A,\; \text{canon}(\text{body}_A)) \qquad \text{(Ed25519)}
-    \end{align*}
-    \textbf{ServerHello (FlightAgent $\to$ Alice):}
-    \begin{align*}
-        \text{Verify}(pk_{CA},\; \text{cert\_body}_A,\; \sigma_{CA,A}) &\to pk_A \qquad \text{(CA证书链验证)}\\
-        \text{Verify}(pk_A,\; \text{canon}(\text{body}_A),\; \sigma_A) &\qquad \text{(身份签名验证)}\\
-        (b, B = g^b) &\leftarrow \text{X25519.KeyGen()} \\
-        \text{shared\_secret} &= a \cdot B = b \cdot A = g^{ab} \qquad \text{(X25519 ECDH)}\\
-        \text{HKDF-SHA256}&(\text{salt}=\text{session\_id},\; \text{info}=\text{"a2a-secure..."},\; L=96) \\
-        &\to k_{enc}[0:32] \parallel k_{mac}[32:64] \parallel k_{log}[64:96]
-    \end{align*}
-    \end{coreconcept}
-    参数: X25519 (Curve25519), HKDF-SHA256, 派生96字节密钥材料, 三把密钥用途分离(加密/完整性/审计).\\
-    代码: \texttt{protocol/handshake.py} — \texttt{HandshakeInitiator}, \texttt{HandshakeResponder}; \texttt{crypto/kdf.py} — \texttt{derive\_keys()}.
-
-    \item [step2] Alice生成授权凭证AuthToken,包括预算、行程、授权信息、授权权限、授权时效、被授权智能体ID等,对这些信息计算杂凑值并签名,将得到的AuthorizationCredential发送给FlightAgent。
-
-    \textbf{密码学操作：}
-    \begin{coreconcept}[Phase 3: 授权凭证 — Ed25519签名]
-    \begin{align*}
-        \text{AuthToken} &= \{\text{issuer},\; \text{delegatee},\; \text{session\_id},\; \text{budget\_cny},\; \text{permissions},\; \text{nonce},\; \text{validity},\; \text{itinerary}\} \\
-        \sigma_{Auth} &= \text{Sign}(sk_A,\; \text{canon}(\text{AuthToken})) \qquad \text{(Ed25519)}\\
-        \text{Passport} &= \{\text{AuthToken},\; \sigma_{Auth},\; \text{Cert}_A\}
-    \end{align*}
-    \end{coreconcept}
-    参数: budget\_cny=10000, permissions=["flight.search","flight.book"], valid\_minutes=10, nonce=token\_hex(16).\\
-    代码: \texttt{protocol/auth\_token.py} — \texttt{make\_authorization()}, \texttt{make\_passport()}.
-
-    \item [step3] FlightAgent接收到授权后先验证签名,如果签名不通过则拒绝服务,直接退出;否则,根据授权凭证的信息执行即机票查询操作,将查询结果,包括具体航班、日期、实际价格,时间戳等信息一并计算杂凑值并签名,将签名和加密后的查询信息发给Alice以询问是否购买预定。
-
-    \textbf{密码学操作 (多层验证链):}
-    \begin{coreconcept}[Phase 3: 安全信封解密 + 授权验证 + 查询]
-    \textbf{FlightAgent 接收侧:}
-    \begin{align*}
-        &\text{ReplayWindow}.\text{check}(\text{session\_id},\; \text{seq},\; \text{timestamp}) \qquad \text{(防重放, $\pm30s$窗口)}\\
-        &\text{HMAC}_{\text{verify}}(k_{mac},\; \text{envelope\_without\_hmac},\; \text{tag}) \qquad \text{(HMAC-SHA256 完整性)}\\
-        &\text{AES-256-GCM}.\text{Decrypt}(k_{enc},\; \text{nonce},\; \text{ct},\; \text{AAD}) \to \text{plaintext} \qquad \text{(AEAD解密)}\\
-        &\text{Verify}(pk_{CA},\; \text{cert\_body}_A,\; \sigma_{CA,A}) \to pk_A \qquad \text{(CA证书链)}\\
-        &\text{Verify}(pk_A,\; \text{canon}(\text{AuthToken}),\; \sigma_{Auth}) \qquad \text{(授权签名验证)}\\
-        &\text{检查: delegatee\_id} \stackrel{?}{=} \text{agent:flight},\; \text{session\_id} \stackrel{?}{=} \text{当前会话},\; \text{budget} \leq 10000,\; \text{permissions} \supseteq \{\text{search},\text{book}\}
-    \end{align*}
-    \textbf{查询结果加密返回:}
-    \begin{align*}
-        \text{results} &= \text{BookingService}.\text{search\_flights}(\text{origin},\; \text{dest},\; \text{date}) \\
-        \sigma_{Result} &= \text{Sign}(sk_F,\; \text{canon}(\{\text{flights},\; \text{timestamp},\; \text{session\_id}\})) \\
-        \text{response} &= \text{AES-256-GCM}.\text{Encrypt}(k_{enc},\; \text{results} \parallel \sigma_{Result})
-    \end{align*}
-    \end{coreconcept}
-    参数: AES-256-GCM (nonce=12B, key=32B), HMAC-SHA256 (key=32B), ReplayWindow (skew=30s).\\
-    代码: \texttt{protocol/envelope.py} — \texttt{open\_envelope()}; \texttt{agents/flight\_agent.py} — \texttt{process\_secure\_request()}, \texttt{\_handle\_query()}.
-
-    \item [step4] Alice收到FlightAgent发送来的信息后先验证签名,如果签名不通过则拒绝服务并直接退出;否则,根据查询结果,判断是否购买预定,发送BookRequest给FlightAgent允许其预定机票。
-
-    \textbf{密码学操作：}
-    \begin{coreconcept}[Phase 4: 查询结果验证 + 预订确认]
-    \begin{align*}
-        &\text{AES-256-GCM}.\text{Decrypt}(k_{enc},\; \text{response}) \to \text{results} \parallel \sigma_{Result} \\
-        &\text{Verify}(pk_{CA},\; \text{Cert}_F) \to pk_F,\qquad \text{Verify}(pk_F,\; \text{canon}(\text{results}),\; \sigma_{Result}) \qquad \text{(查询结果验签)}\\
-        &\text{BookRequest} = \{\text{flight\_no},\; \text{confirm}\},\qquad \text{Enc}_{k_{enc}}(\text{BookRequest}) \to \text{FlightAgent}
-    \end{align*}
-    \end{coreconcept}
-    代码: \texttt{agents/alice\_agent.py} — \texttt{query\_flights()}, \texttt{confirm\_booking()}.
-
-    \item [step5] FlightAgent收到Alice发送来的BookRequest信息,同样验证签名,不通过则拒绝服务并退出,否则执行step6。
-
-    \textbf{密码学操作：} 重复step3的安全信封解密与HMAC验证流程(同 \texttt{open\_envelope()}),验签通过后执行预订.
-
-    \item [step6] FlightAgent在航空公司Airline处预定机票,将具体订单ID、航空公司信息、机票信息、具体花费等信息作为收据Receipt,签名并发回给Alice。
-
-    \textbf{密码学操作：}
-    \begin{coreconcept}[Phase 5-6: 订单执行 + 签名审计回执]
-    \begin{align*}
-        \text{order} &= \text{BookingService}.\text{create\_order}(\text{flight\_no},\; \text{passengers},\; \text{route}) \\
-        \text{receipt\_body} &= \{\text{session\_id},\; \text{executed\_at},\; \text{order},\; \text{actual\_spend},\; \text{auth\_digest},\; \text{executor\_id}\} \\
-        \text{auth\_digest} &= \text{SHA-256}(\text{canon}(\text{AuthToken})) \qquad \text{(授权摘要绑定)}\\
-        \sigma_{Receipt} &= \text{Sign}(sk_F,\; \text{canon}(\text{receipt\_body})) \qquad \text{(Ed25519 不可抵赖)}\\
-        \text{Klog\_HMAC} &= \text{HMAC}(k_{log},\; \text{canon}(\text{receipt\_body})) \qquad \text{(审计链绑定)}
-    \end{align*}
-    \end{coreconcept}
-    参数: Ed25519签名, SHA-256杂凑, HMAC-SHA256 (key=$k_{log}$, 32B).\\
-    代码: \texttt{protocol/receipt.py} — \texttt{make\_receipt()}; \texttt{agents/booking\_service.py} — \texttt{create\_order()}.
-
-    \item [step7] Alice验证签名,保存审计记录,并将结果报告给user。
-
-    \textbf{密码学操作：}
-    \begin{coreconcept}[Phase 6: Alice侧回执验证 — 双重验证]
-    \begin{align*}
-        &\text{Verify}(pk_{CA},\; \text{Cert}_F) \to pk_F \qquad \text{(CA证书链验证)}\\
-        &\text{Verify}(pk_F,\; \text{canon}(\text{receipt\_body}),\; \sigma_{Receipt}) \qquad \text{(Ed25519 回执验签)}\\
-        &\text{HMAC}_{\text{verify}}(k_{log},\; \text{canon}(\text{receipt\_body}),\; \text{Klog\_HMAC}) \qquad \text{(审计链完整性)}
-    \end{align*}
-    通过后写入审计日志: \texttt{AuditLogger.log(event\_type="receipt", detail\_digest=SHA-256(receipt), klog\_hmac)}.
-    \end{coreconcept}
-    代码: \texttt{agents/alice\_agent.py} — \texttt{verify\_receipt()}; \texttt{audit/logger.py} — \texttt{AuditLogger}; \texttt{audit/store.py} — \texttt{AuditStore}.
-
+    \input{content/project_steps/1CA.tex}
+    \input{content/project_steps/2auth_key.tex}
+    \input{content/project_steps/3permision.tex}
+    \input{content/project_steps/4multi_verify.tex}
+    \input{content/project_steps/5Alice_verify_result.tex}
+    \input{content/project_steps/6FlightaAgent_verify.tex}
+    \input{content/project_steps/7order_return.tex}
+    \input{content/project_steps/8Alice_final_verify.tex}
     \item [step8] Alice将最终结果报告给用户,包括成功预定或中途发生的异常信息。
 \end{itemize}
 

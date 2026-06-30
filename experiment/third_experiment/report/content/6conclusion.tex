@@ -1,0 +1,57 @@
+\section{实验结果分析与总结}
+\subsection{实验目标达成情况}
+本次实验围绕"Agent-to-Agent（A2A）安全协作协议"的设计与实现展开，完整覆盖了证书颁发、密钥协商、授权管理、身份验证、安全通信与审计回执的全流程。实验主要达成了以下目标：
+
+\begin{enumerate}[leftmargin=2em]
+    \item \textbf{PKI 信任基础设施搭建}：实现了基于 Ed25519 的 CA 证书颁发与验证机制，支持 Agent 身份的公钥绑定与链式信任传递。
+    \item \textbf{保密密钥交换}：采用 X25519 ECDH + HKDF-SHA256 方案完成会话密钥的双方一致派生，派生出加密密钥 $k_{\text{enc}}$、完整性密钥 $k_{\text{mac}}$ 与审计密钥 $k_{\log}$，实现三把密钥用途分离。
+    \item \textbf{授权控制不扩散}：通过带数字签名的 AuthToken + Passport 机制，将预算上限、权限列表、有效期等约束条件以密码学方式绑定，防止越权操作。
+    \item \textbf{多层安全防护体系}：在传输层同时部署 AES-256-GCM(机密性+认证)、HMAC-SHA256(完整性)、ReplayWindow(抗重放)和 Ed25519 签名(不可否认性),形成了完整全面的立体安全防护体系。
+    \item \textbf{执行全程可追溯}：每笔订单生成包含签名与 HMAC 审计链的回执，Alice 可独立验证 FlightAgent 的执行行为，实现事后可追溯。
+\end{enumerate}
+
+\subsection{安全性分析}
+通过对六类典型攻击场景的测试，协议在各层面均表现出有效的防护能力：
+
+\begin{table}[H]
+    \centering
+    \caption{安全防护能力汇总}
+    \small
+    \begin{tabularx}{\textwidth}{@{}llX@{}}
+        \toprule
+        \textbf{安全属性} & \textbf{攻击场景} & \textbf{防护机制} \\
+        \midrule
+        机密性 & 密文篡改/窃听 & AES-256-GCM AEAD 加密，篡改后解密认证标签校验失败 \\
+        完整性 & 消息/信封篡改 & HMAC-SHA256 覆盖签名，任何字段变更均导致 MAC 不匹配 \\
+        抗重放 & 重放攻击 & ReplayWindow 维护 (session\_id, seq) 已见集合，超时窗口 $\pm 30$\,s \\
+        认证与身份绑定 & 伪造身份/冒充 & Ed25519 CA 证书链验证，非法证书签名不匹配即拒绝 \\
+        授权约束 & 预算/权限扩权 & AuthToken 全部字段经 Ed25519 签名锁定，篡改导致验签失败 \\
+        不可否认性 & 订单抵赖 & 回执含 Ed25519 签名 $\sigma_F$ + HMAC 审计链，双方均可验证 \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+所有异常测试均在 $5$\,ms 内完成检测并拒绝恶意请求，表明协议的安全开销可控且响应及时。
+
+\subsection{性能分析}
+正常流程总耗时为 $23.41$\,ms，各阶段性能特征如下：
+
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{Step~0（证书获取，117\,ms）}：占总耗时的主要部分。该阶段涉及网络 I/O（HTTP 请求获取 AgentCard），属于一次性握手开销，后续复用 session 无需重复。
+    \item \textbf{Phase~1--2（ECDH+HKDF，17.47\,ms）}：X25519 标量乘法与 HKDF 派生是计算密集型操作，但仅需在会话建立时执行一次。
+    \item \textbf{Phase~3--6（业务操作，共 6.18\,ms）}：查询、预订、验证等业务操作的密码学开销均在毫秒级，AES-GCM 加解密与 Ed25519 签名/验签效率较高。
+    \item \textbf{异常检测（2.77--4.82\,ms）}：各类攻击的检测延迟均匀分布在 3--5\,ms 区间，不会成为性能瓶颈。
+\end{itemize}
+
+总体而言，除去网络 I/O 的证书获取步骤后，核心密码学协议的总耗时仅为 $23.41$\,ms，满足实时交互的性能要求，因此该协议除了实现Agent安全协作外，还兼顾了实际使用效率，具有较好的实际应用价值。
+
+% \subsection{不足与改进方向}
+% 尽管实验基本达到了设计目标，但当前实现仍有以下局限：
+
+% \begin{enumerate}[leftmargin=2em]
+%     \item \textbf{单点 CA 依赖}：当前仅使用一个 CA，若 CA 私钥泄露则整个信任体系崩溃。改进方案可采用多 CA 联盟或基于门限签名的分布式 CA。
+%     \item \textbf{无前向安全性（PFS）保障}：长期密钥泄露可能导致历史会话密钥被推导。可引入 ratchet 机制（如 Signal 协议的双棘轮算法）实现完美前向保密。
+%     \item \textbf{ReplayWindow 为内存存储}：重启后丢失状态。改进方案可将已见 (session\_id, seq) 对持久化至数据库或使用滑动窗口日志。
+%     \item \textbf{缺少密钥撤销机制}：Agent 私钥泄露后无法即时吊销证书。可增加 CRL（证书吊销列表）或 OCSP 在线状态查询。
+%     \item \textbf{测试覆盖面有限}：当前仅覆盖了 6 类手动构造的异常场景，未进行模糊测试（fuzzing）或形式化验证。
+% \end{enumerate}

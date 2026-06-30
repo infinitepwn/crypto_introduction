@@ -1,0 +1,16 @@
+\item [step5] FlightAgent收到Alice发送来的BookRequest信息,同样验证签名,不通过则拒绝服务并退出,否则执行step6。
+
+    \textbf{密码学操作：} 重复step3的安全信封解密与HMAC验证流程(同 \texttt{open\_envelope()}),验签通过后执行预订.
+
+\begin{lstlisting}[caption={agents/flight\_agent.py — process\_secure\_request() confirm 分支}]
+# process_secure_request() 中 action=="confirm" 分支
+# 1. open_envelope(): 防重放 + HMAC 完整性 + AES-256-GCM 解密 (同 step3)
+plaintext = open_envelope(envelope, keys, replay)
+request   = json.loads(plaintext)
+# 2. _verify_authorization(): CA 证书链 + 授权签名 + 约束检查 (同 step3)
+passport = request["metadata"][SECURE_PASSPORT_URI]
+auth     = self._verify_authorization(passport, session_id)
+# 3. 分发至 _handle_confirm()
+flight_no = request.get("flight_no", "CA981")
+return self._handle_confirm(auth, flight_no, keys["klog"])
+\end{lstlisting}

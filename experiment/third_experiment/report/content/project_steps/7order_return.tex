@@ -1,0 +1,53 @@
+\item [step6] FlightAgent在航空公司Airline处预定机票,将具体订单ID、航空公司信息、机票信息、具体花费等信息作为收据Receipt,签名并发回给Alice。
+
+    \textbf{密码学操作：}
+    \begin{coreconcept}[Phase 5-6: 订单执行 + 签名审计回执]
+    \begin{align*}
+        \text{order} &= \text{BookingService}.\text{create\_order}(\text{flight\_no},\; \text{passengers},\; \text{route}) \\
+        \text{receipt\_body} &= \{\text{session\_id},\; \text{executed\_at},\; \text{order},\; \text{actual\_spend},\; \text{auth\_digest},\; \text{executor\_id}\} \\
+        \text{auth\_digest} &= \text{SHA-256}(\text{canon}(\text{AuthToken})) \qquad \text{(授权摘要绑定)}\\
+        \sigma_{Receipt} &= \text{Sign}(sk_F,\; \text{canon}(\text{receipt\_body})) \qquad \text{(Ed25519 不可抵赖)}\\
+        \text{Klog\_HMAC} &= \text{HMAC}(k_{log},\; \text{canon}(\text{receipt\_body})) \qquad \text{(审计链绑定)}
+    \end{align*}
+    \end{coreconcept}
+    参数: Ed25519签名, SHA-256杂凑, HMAC-SHA256 (key=$k_{log}$, 32B).\\
+    代码: \texttt{protocol/receipt.py} — \texttt{make\_receipt()}; \texttt{agents/booking\_service.py} — \texttt{create\_order()}.
+
+\begin{lstlisting}[caption={protocol/receipt.py — make\_receipt() ; agents/flight\_agent.py — \_handle\_confirm()}]
+# --- protocol/receipt.py: make_receipt() ---
+def make_receipt(executor, session_id, order, authorization, klog):
+    receipt_body = {
+        "session_id":        session_id,
+        "executed_at":       now_iso(),
+        "order":             order,
+        "actual_spend_cny":  order["price_cny"],
+        # 绑定至授权: auth_digest = SHA-256(canon(AuthToken))
+        "authorization_digest": sha256_text(authorization),
+        "executor_agent_id": executor.agent_id,
+    }
+    return {
+        "type":      "signed_audit_receipt",
+        "body":      receipt_body,
+        # 不可抵赖: sigma_F = Sign(sk_F, receipt_body)  (Ed25519)
+        "signature": sign(executor.signing_private, receipt_body),
+        "certificate": executor.certificate,
+        # 审计链绑定: Klog_HMAC = HMAC(klog, receipt_body)
+        "klog_hmac": compute_b64(klog, canon(receipt_body)),
+    }
+
+# --- agents/flight_agent.py: _handle_confirm() ---
+def _handle_confirm(self, auth, flight_no, klog):
+    itinerary = auth.get("itinerary", {})
+    order = self.booking_service.create_order(
+        flight_no=flight_no,
+        passengers=itinerary.get("passengers", 1),
+        route=f"{itinerary.get('from','Qingdao')}-"
+              f"{itinerary.get('to','New York')} round trip",
+        depart_date=itinerary.get("depart_date","2026-06-08"),
+        return_date=itinerary.get("return_date","2026-06-16"),
+    )
+    if order["price_cny"] > auth["budget_cny"]:
+        raise AuthorizationError("Price exceeds authorized budget")
+    return make_receipt(self.identity, auth["session_id"],
+                        order, auth, klog)
+\end{lstlisting}

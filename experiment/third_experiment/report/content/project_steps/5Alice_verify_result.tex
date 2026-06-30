@@ -1,0 +1,43 @@
+\item [step4] Alice收到FlightAgent发送来的信息后先验证签名,如果签名不通过则拒绝服务并直接退出;否则,根据查询结果,判断是否购买预定,发送BookRequest给FlightAgent允许其预定机票。
+
+    \textbf{密码学操作：}
+    \begin{coreconcept}[Phase 4: 查询结果验证 + 预订确认]
+    \begin{align*}
+        &\text{AES-256-GCM}.\text{Decrypt}(k_{enc},\; \text{response}) \to \text{results} \parallel \sigma_{Result} \\
+        &\text{Verify}(pk_{CA},\; \text{Cert}_F) \to pk_F,\quad \text{Verify}(pk_F,\; \text{canon}(\text{results}),\; \sigma_{Result}) \quad \text{(查询结果验签)}\\
+        &\text{BookRequest} = \{\text{flight\_no},\; \text{confirm}\},\qquad \text{Enc}_{k_{enc}}(\text{BookRequest}) \to \text{FlightAgent}
+    \end{align*}
+    \end{coreconcept}
+    代码: \texttt{agents/alice\_agent.py} — \texttt{query\_flights()}, \texttt{confirm\_booking()}.
+
+\begin{lstlisting}[caption={agents/alice\_agent.py — query\_flights() \& confirm\_booking()}]
+# --- query_flights(): Phase 3 — 发送加密查询，验证签名结果 ---
+async def query_flights(self, client, session_id,
+                        itinerary=None, budget_cny=10000, ...):
+    payload = self._build_request_payload(
+        action="query", session_id=session_id,
+        budget_cny=budget_cny, itinerary=itinerary)
+    keys = self._session_keys[session_id]
+    # AES-256-GCM + HMAC 安全信封封装
+    metadata = seal_envelope(payload, session_id, keys,
+                             seq=self._next_seq(session_id))
+    response = await _send_once(client, "flight query request", metadata)
+    # 校验 FlightAgent 返回结果的 Ed25519 签名
+    if response.get("type") == "flight_query_result":
+        flight_id = self.ca.verify_certificate(response["certificate"])
+        verify(flight_id.public_key,
+               response["signature"], response["body"])
+    return response
+
+# --- confirm_booking(): Phase 4-5 — 发送加密预订请求 ---
+async def confirm_booking(self, client, session_id,
+                          flight_no, itinerary=None, budget_cny=10000):
+    payload = self._build_request_payload(
+        action="confirm", session_id=session_id,
+        budget_cny=budget_cny, itinerary=itinerary,
+        flight_no=flight_no)
+    keys = self._session_keys[session_id]
+    metadata = seal_envelope(payload, session_id, keys,
+                             seq=self._next_seq(session_id))
+    return await _send_once(client, "booking confirmation", metadata)
+\end{lstlisting}

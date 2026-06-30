@@ -21,6 +21,21 @@
 \renewcommand{\headrule}{\hbox to\headwidth{\color{macblue}\leaders\hrule height \headrulewidth\hfill}}
 
 % --- 自定义高亮公式框 ---
+% \newtcolorbox{coreconcept}[1][]{
+%     colback=bglight,
+%     colframe=macblue,
+%     fonttitle=\bfseries\sffamily,
+%     title=#1,
+%     arc=3mm,
+%     boxrule=1.2pt,
+%     shadow={2mm}{-1.5mm}{0mm}{black!15},
+%     left=10pt, right=10pt, top=5pt, bottom=5pt
+%     fontupper=\small,        % 新增：整体缩小一号，腾出空间
+%     width=\linewidth,        % 确保宽度不超过页边距
+%     before skip=10pt,
+%     after skip=10pt
+% }
+
 \newtcolorbox{coreconcept}[1][]{
     colback=bglight,
     colframe=macblue,
@@ -29,8 +44,14 @@
     arc=3mm,
     boxrule=1.2pt,
     shadow={2mm}{-1.5mm}{0mm}{black!15},
-    left=10pt, right=10pt, top=5pt, bottom=5pt
+    left=10pt, right=10pt, top=5pt, bottom=5pt,
+    fontupper=\small,        % 新增：整体缩小一号，腾出空间
+    width=\linewidth,        % 确保宽度不超过页边距
+    before skip=10pt,
+    after skip=10pt
 }
+
+
 \newtcolorbox{warningbox}[1][]{
     colback=warningred!5,
     colframe=warningred,
