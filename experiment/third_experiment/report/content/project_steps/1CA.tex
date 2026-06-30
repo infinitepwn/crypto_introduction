@@ -1,0 +1,50 @@
+% 这里将原来提到的协议各个步骤单独提取出来,因为不仅要解释原理步骤,还要展示代码
+\item [step0] Alice和FlightAgent在CA处注册得到各自的证书certificate,user向Alice发出预定机票的命令:"预订
+    下周(2026.06.08-2026.06.16)青岛—纽约往返机票，总预算不超过 10000 元，单人出行",此后仅需等待Alice与FlightAgent协作交互即可,无需user介入操作。
+
+    \textbf{密码学操作：} CA使用Ed25519为每个Agent签发身份证书，证书绑定Agent身份与公钥(这里CA是提前给各方签发证书的,协议在线运行阶段不涉及与CA的交互)：
+    \begin{coreconcept}[CA证书签发 — Ed25519]
+    \begin{flalign*}
+        (sk_A, pk_A) &\leftarrow \text{Ed25519.KeyGen()} &\\
+        \text{cert\_body}_A &= \{\text{agent\_id}_A,\; \text{pk}_A,\; \text{permissions},\; \text{not\_before},\; \text{not\_after}\} &\\
+        \sigma_{CA,A} &= \text{Sign}(sk_{CA},\; \text{canon}(\text{cert\_body}_A)) \qquad \text{(Ed25519, 128-bit安全强度)} &\\
+        \text{Cert}_A &= (\text{cert\_body}_A,\; \sigma_{CA,A}) &
+    \end{flalign*}
+    \end{coreconcept}
+    参数: Ed25519 (Edwards25519曲线), 证书有效期 2026-06-01 $\sim$ 2026-12-31.\\
+    代码: \texttt{ca/certificate\_authority.py} — \texttt{issue\_agent()}, \texttt{verify\_certificate()}.
+
+\begin{lstlisting}[caption={ca/certificate\_authority.py — issue\_agent() \& verify\_certificate()}]
+def issue_agent(self, agent_id, permissions,
+                not_before="2026-06-01T00:00:00+00:00",
+                not_after="2026-12-31T23:59:59+00:00"):
+    # 1. 生成 Agent 的 Ed25519 密钥对
+    signing_private = generate_keypair()
+    signing_public  = signing_private.public_key()
+    cert_body = {
+        "agent_id": agent_id,
+        "public_key": b64e(signing_public.public_bytes_raw()),
+        "permissions": permissions,
+        "not_before": not_before, "not_after": not_after,
+        "issuer": "TrustedOfflineCA",
+    }
+    # 2. CA 使用 Ed25519 私钥对证书体签名
+    certificate = {
+        "body": cert_body,
+        "ca_signature": sign(self.private_key, cert_body),
+    }
+    return AgentIdentity(agent_id, permissions, signing_private, certificate)
+
+def verify_certificate(self, certificate):
+    body = certificate["body"]
+    # 1. 验证 CA 签名: Verify(pk_CA, cert_body, ca_signature)
+    verify(self.public_key, certificate["ca_signature"], body)
+    # 2. 检查证书有效期窗口
+    current = datetime.now(timezone.utc)
+    if current < datetime.fromisoformat(body["not_before"]):
+        raise ValueError("Certificate not yet valid")
+    if current > datetime.fromisoformat(body["not_after"]):
+        raise ValueError("Certificate has expired")
+    return AgentIdentity(body["agent_id"], body["permissions"],
+                         signing_private=None, certificate=certificate)
+\end{lstlisting}

@@ -1,0 +1,79 @@
+\item [step3] FlightAgent接收到授权后先验证签名,如果签名不通过则拒绝服务,直接退出;否则,根据授权凭证的信息执行即机票查询操作,将查询结果,包括具体航班、日期、实际价格,时间戳等信息一并计算杂凑值并签名,将签名和加密后的查询信息发给Alice以询问是否购买预定。
+
+    \textbf{密码学操作 (多层验证链):}
+    \begin{coreconcept}[Phase 3: 安全信封解密 + 授权验证 + 查询]
+    \textbf{FlightAgent 接收侧:}
+    \begin{flalign*}
+        &\text{ReplayWindow}.\text{check}(\text{session\_id},\; \text{seq},\; \text{timestamp}) \qquad \text{(防重放, $\pm30s$窗口)}&\\
+        &\text{HMAC}_{\text{verify}}(k_{mac},\; \text{envelope\_without\_hmac},\; \text{tag}) \qquad \text{(HMAC-SHA256 完整性)}&\\
+        &\text{AES-256-GCM}.\text{Decrypt}(k_{enc},\; \text{nonce},\; \text{ct},\; \text{AAD}) \to \text{plaintext} \qquad \text{(AEAD解密)}&\\
+        &\text{Verify}(pk_{CA},\; \text{cert\_body}_A,\; \sigma_{CA,A}) \to pk_A \qquad \text{(CA证书链)}&\\
+        &\text{Verify}(pk_A,\; \text{canon}(\text{AuthToken}),\; \sigma_{Auth}) \qquad \text{(授权签名验证)}&\\
+        &\text{检查: delegatee\_id} \stackrel{?}{=} \text{agent:flight},\; \text{session\_id} \stackrel{?}{=} \text{当前会话}, &\\
+        &\quad\quad \text{budget} \leq 10000,\; \text{permissions} \supseteq \{\text{search},\text{book}\} &
+    \end{flalign*}
+    \textbf{查询结果加密返回:}
+    \begin{align*}
+        \text{results} &= \text{BookingService}.\text{search\_flights}(\text{origin},\; \text{dest},\; \text{date}) \\
+        \sigma_{Result} &= \text{Sign}(sk_F,\; \text{canon}(\{\text{flights},\; \text{timestamp},\; \text{session\_id}\})) \\
+        \text{response} &= \text{AES-256-GCM}.\text{Encrypt}(k_{enc},\; \text{results} \parallel \sigma_{Result})
+    \end{align*}
+    \end{coreconcept}
+    参数: AES-256-GCM (nonce=12B, key=32B), HMAC-SHA256 (key=32B), ReplayWindow (skew=30s).\\
+    代码: \texttt{protocol/envelope.py} — \texttt{open\_envelope()}; \texttt{agents/flight\_agent.py} — \texttt{process\_secure\_request()}, \texttt{\_handle\_query()}.
+
+\begin{lstlisting}[caption={protocol/envelope.py — open\_envelope() ; agents/flight\_agent.py — \_verify\_authorization() \& \_handle\_query()}]
+# --- protocol/envelope.py: open_envelope() ---
+def open_envelope(envelope, session_keys, replay_window):
+    keys = session_keys
+    # Step 1: 防重放 (seq + timestamp, ±30s 窗口)
+    replay_window.accept(envelope["session_id"],
+                         envelope["seq"], envelope["timestamp"])
+    # Step 2: HMAC-SHA256 完整性校验 (排除 hmac 字段)
+    mac_input = canon({k: v for k, v in envelope.items() if k != "hmac"})
+    if not verify_b64(keys["kmac"], mac_input, envelope["hmac"]):
+        raise IntegrityError("HMAC integrity check failed")
+    # Step 3: AES-256-GCM AEAD 解密
+    plaintext = decrypt(b64d(envelope["nonce"]),
+                        b64d(envelope["ciphertext"]),
+                        keys["kenc"], canon(envelope["aad"]))
+    return plaintext
+
+# --- agents/flight_agent.py: _verify_authorization() ---
+def _verify_authorization(self, passport, session_id):
+    auth = passport["state"]["authorization"]
+    # CA 证书链验证: Verify(pk_CA, cert_body, ca_signature)
+    alice_identity = self.ca.verify_certificate(passport["certificate"])
+    # Alice 的 Ed25519 授权签名
+    verify_sig(alice_identity.public_key, passport["signature"], auth)
+    # 约束检查
+    if auth["delegatee_agent_id"] != self.identity.agent_id:
+        raise AuthorizationError("Wrong delegatee")
+    if auth["session_id"] != session_id or auth.get("nonce_used"):
+        raise AuthorizationError("Invalid session or reused nonce")
+    if auth["budget_cny"] > 10000:
+        raise AuthorizationError("Budget exceeds limit")
+    if not {"flight.search","flight.book"}.issubset(auth["permissions"]):
+        raise AuthorizationError("Missing required permissions")
+    return auth
+
+# --- agents/flight_agent.py: _handle_query() ---
+def _handle_query(self, auth, klog):
+    flights = self.booking_service.search_flights(
+        origin=auth["itinerary"].get("from","Qingdao"),
+        destination=auth["itinerary"].get("to","New York"),
+        depart_date=auth["itinerary"].get("depart_date","2026-06-08"),
+        passengers=auth["itinerary"].get("passengers",1),
+    )
+    result_body = {
+        "session_id": auth["session_id"], "flights": flights,
+        "searched_at": now_iso(),
+        "executor_agent_id": self.identity.agent_id,
+    }
+    # FlightAgent 对查询结果签名: sigma_F = Sign(sk_F, result_body)
+    return {
+        "type": "flight_query_result", "body": result_body,
+        "signature":   do_sign(self.identity.signing_private, result_body),
+        "certificate": self.identity.certificate,
+    }
+\end{lstlisting}

@@ -1,0 +1,38 @@
+\item [step7] Alice验证签名,保存审计记录,并将结果报告给user。
+
+    \textbf{密码学操作：}
+    \begin{coreconcept}[Phase 6: Alice侧回执验证 — 双重验证]
+    \begin{align*}
+        &\text{Verify}(pk_{CA},\; \text{Cert}_F) \to pk_F \qquad \text{(CA证书链验证)}\\
+        &\text{Verify}(pk_F,\; \text{canon}(\text{receipt\_body}),\; \sigma_{Receipt}) \qquad \text{(Ed25519 回执验签)}\\
+        &\text{HMAC}_{\text{verify}}(k_{log},\; \text{canon}(\text{receipt\_body}),\; \text{Klog\_HMAC}) \qquad \text{(审计链完整性)}
+    \end{align*}
+    \text{通过后写入审计日志:}\\
+    \texttt{AuditLogger.log(event\_type="receipt", detail\_digest=SHA-256(receipt), klog\_hmac)}.
+    \end{coreconcept}
+    代码: \texttt{agents/alice\_agent.py} — \texttt{verify\_receipt()}; \texttt{audit/logger.py} — \texttt{AuditLogger}; \texttt{audit/store.py} — \texttt{AuditStore}.
+
+\begin{lstlisting}[caption={agents/alice\_agent.py — verify\_receipt() ; protocol/receipt.py — verify\_receipt()}]
+# --- agents/alice_agent.py: verify_receipt() ---
+def verify_receipt(self, receipt, session_id):
+    keys = self._session_keys.get(session_id)
+    if keys is None:
+        raise ValueError(f"Unknown session: {session_id}")
+    # 1. 验证 FlightAgent 的 CA 证书
+    flight_identity = self.ca.verify_certificate(receipt["certificate"])
+    # 2. Ed25519 回执签名 + Klog HMAC 验证 (委托至协议层)
+    return verify_receipt_protocol(receipt,
+                                   flight_identity.public_key,
+                                   keys["klog"])
+
+# --- protocol/receipt.py: verify_receipt() ---
+def verify_receipt(receipt, executor_public_key, klog):
+    body = receipt["body"]
+    # 不可抵赖: Verify(pk_F, receipt_body, sigma_F)
+    verify(executor_public_key, receipt["signature"], body)
+    # 审计链: HMAC(klog, receipt_body) 必须匹配 klog_hmac
+    expected = compute_b64(klog, canon(body))
+    if receipt.get("klog_hmac") != expected:
+        raise ValueError("Klog HMAC mismatch - audit chain broken")
+    return True
+\end{lstlisting}

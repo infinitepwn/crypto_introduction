@@ -1,0 +1,52 @@
+\item [step2] Alice生成授权凭证AuthToken,包括预算、行程、授权信息、授权权限、授权时效、被授权智能体ID等,对这些信息计算杂凑值并签名,将得到的AuthorizationCredential发送给FlightAgent。
+
+    \textbf{密码学操作：}
+    \begin{coreconcept}[Phase 3: 授权凭证 — Ed25519签名]
+    \begin{flalign*}
+        \text{AuthToken} &= \{\text{issuer},\; \text{delegatee},\; \text{session\_id},\; \text{budget\_cny}, &\\
+        &\quad \text{permissions},\; \text{nonce},\; \text{validity},\; \text{itinerary}\} &\\
+        \sigma_{Auth} &= \text{Sign}(sk_A,\; \text{canon}(\text{AuthToken})) \qquad \text{(Ed25519)} &\\
+        \text{Passport} &= \{\text{AuthToken},\; \sigma_{Auth},\; \text{Cert}_A\} &
+    \end{flalign*}
+    \end{coreconcept}
+    参数: budget\_cny=10000, permissions=["flight.search","flight.book"], valid\_minutes=10, nonce=token\_hex(16).\\
+    代码: \texttt{protocol/auth\_token.py} — \texttt{make\_authorization()}, \texttt{make\_passport()}.
+
+\begin{lstlisting}[caption={protocol/auth\_token.py — make\_authorization() \& make\_passport()}]
+def make_authorization(issuer, delegatee_agent_id, session_id,
+                       budget_cny=10000, permissions=None,
+                       itinerary=None, valid_minutes=10):
+    if permissions is None:
+        permissions = ["flight.search", "flight.book"]
+    auth_payload = {
+        "issuer_agent_id":    issuer.agent_id,
+        "delegatee_agent_id": delegatee_agent_id,
+        "session_id":   session_id,
+        "budget_cny":   budget_cny,
+        "permissions":  permissions,
+        "valid_from":   now_iso(),
+        "valid_until":  (datetime.now(timezone.utc)
+                         + timedelta(minutes=valid_minutes)).isoformat(),
+        "nonce":       secrets.token_hex(16),  # 一次性 nonce
+        "nonce_used":  False,
+        "itinerary":   itinerary or {},
+    }
+    # Alice 对完整授权负载进行 Ed25519 签名
+    return {
+        "authorization": auth_payload,
+        "signature":     sign(issuer.signing_private, auth_payload),
+    }
+
+def make_passport(issuer, delegatee_agent_id, session_id,
+                  budget_cny=10000, permissions=None, itinerary=None):
+    auth = make_authorization(issuer, delegatee_agent_id, session_id,
+                              budget_cny, permissions, itinerary)
+    # 打包: AuthToken + 签名 + Alice 的证书
+    return {
+        "clientId":    issuer.agent_id,
+        "sessionId":   session_id,
+        "state":       {"authorization": auth["authorization"]},
+        "certificate": issuer.certificate,
+        "signature":   auth["signature"],
+    }
+\end{lstlisting}

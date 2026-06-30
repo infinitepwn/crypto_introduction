@@ -1,0 +1,70 @@
+\item [step1] Alice与FlightAgent之间基于STS协议(认证密钥协商)进行身份验证与ECDH会话密钥协商。
+
+    \textbf{密码学操作：}
+    \begin{coreconcept}[Phase 1-2: 认证密钥协商 — X25519 ECDH + Ed25519 + HKDF]
+    \begin{flalign*}
+    \intertext{\textbf{ClientHello (Alice $\to$ FlightAgent):}}
+    & (a, A = g^a) \leftarrow \text{X25519.KeyGen()} \qquad \text{(临时密钥对)} &\\
+    & \text{body}_A = \{\text{session\_id},\; \text{agent\_id}_A,\; A_{pub},\; \text{timestamp}\} &\\
+    & \sigma_A = \text{Sign}(sk_A,\; \text{canon}(\text{body}_A)) \qquad \text{(Ed25519)} &\\[6pt]
+    \intertext{\textbf{ServerHello (FlightAgent $\to$ Alice):}}
+    & \text{Verify}(pk_{CA},\; \text{cert\_body}_A,\; \sigma_{CA,A}) \to pk_A \qquad \text{(CA证书链验证)} &\\
+    & \text{Verify}(pk_A,\; \text{canon}(\text{body}_A),\; \sigma_A) \qquad \text{(身份签名验证)} &\\
+    & (b, B = g^b) \leftarrow \text{X25519.KeyGen()} &\\
+    & \text{shared\_secret} = B^a = A^b = g^{ab} \qquad \text{(X25519 ECDH)} &\\
+    % 在这里手动拆分了超长的 HKDF 行：
+    & \text{HKDF-SHA256}(\text{salt}=\text{session\_id},\; \text{info}=\text{"a2a-secure..."},\; L=96) &\\
+    & \quad \to k_{enc}[0:32] \parallel k_{mac}[32:64] \parallel k_{log}[64:96] &
+    \end{flalign*}
+    \end{coreconcept}
+    参数: X25519 (Curve25519), HKDF-SHA256, 派生96字节密钥材料, 三把密钥用途分离(加密/完整性/审计).\\
+    代码: \texttt{protocol/handshake.py} — \texttt{HandshakeInitiator}, \texttt{HandshakeResponder}; \texttt{crypto/kdf.py} — \texttt{derive\_keys()}.
+
+\begin{lstlisting}[caption={protocol/handshake.py — ClientHello (Alice) \& ServerHello (FlightAgent)}]
+# --- Alice 侧: make_client_hello() ---
+def make_client_hello(self):
+    session_id   = "sess-" + uuid.uuid4().hex
+    ephemeral_priv = generate_private()          # X25519 临时密钥对
+    body = {
+        "session_id": session_id,
+        "agent_id":   self.identity.agent_id,
+        "x25519_public": public_to_b64(ephemeral_priv.public_key()),
+        "timestamp":  now_iso(),
+    }
+    hello = {
+        "phase": "client_hello", "body": body,
+        "certificate": self.identity.certificate,
+        "signature":   sign(self.identity.signing_private, body),  # Ed25519
+    }
+    self._pending[session_id] = ephemeral_priv
+    return session_id, {SECURE_HANDSHAKE_URI: hello}
+
+# --- FlightAgent 侧: process_client_hello() ---
+def process_client_hello(self, hello):
+    body, cert = hello["body"], hello["certificate"]
+    # Step 1: 验证 Alice 的 CA 证书
+    alice_identity = self.ca.verify_certificate(cert)
+    # Step 2: 验证 Alice 对 hello body 的 Ed25519 签名
+    verify(alice_identity.public_key, hello["signature"], body)
+    # Step 3: 身份绑定 — agent_id 必须与证书一致
+    if body["agent_id"] != cert["body"]["agent_id"]:
+        raise IdentityError("Identity binding mismatch")
+    # Step 4: X25519 ECDH + HKDF 密钥派生
+    my_ephemeral   = generate_private()
+    shared_secret  = exchange(my_ephemeral,
+                              public_from_b64(body["x25519_public"]))
+    session_keys   = derive_keys(shared_secret, body["session_id"])
+    # kenc[0:32] || kmac[32:64] || klog[64:96]  (HKDF-SHA256, L=96)
+    server_body = {
+        "session_id": body["session_id"],
+        "agent_id":   self.identity.agent_id,
+        "x25519_public": public_to_b64(my_ephemeral.public_key()),
+        "timestamp":  now_iso(),
+    }
+    server_hello = {
+        "phase": "server_hello", "body": server_body,
+        "certificate": self.identity.certificate,
+        "signature":   sign(self.identity.signing_private, server_body),
+    }
+    return body["session_id"], session_keys, server_hello
+\end{lstlisting}
